@@ -1,0 +1,138 @@
+Every object has:
+ - a name
+ - a symbol: @ # ! o
+ - a color (note: the game must be playable in monochrome)
+ - a description
+ - XP per kill
+    - does it stop giving XP if the player's level is too high?
+ - alignment (friendly, neutral, hostile)
+ - does it block line of sight?
+ - can it be walked on?
+ - behavior:
+   - when nothing unusual is happening
+   - when player is within perception
+   - when attacked
+   - when "stepped onto"
+      (sometimes this means a basic melee attack, sometimes not)
+   - when at low health?
+   - etc
+ - Game stats:
+   - hit points (A number, or None for infinite=indestructable)
+   - defense
+      - physical
+      - magic of various types
+   - attacks
+   - damage per hit
+   - speed
+   - etc
+ - If a takeable item:
+   - what does it do when used?
+   - how many times can it be used?
+
+player has
+
+- Gear slots:
+  - weapon
+  - helm
+  - armor
+  - shoes
+  - ring (right and left)
+  - spellbook
+  - other slots?
+
+- Knowledge of skills of various types
+
+- same "game stats" as everything else, plus:
+  - hunger
+  - thirst
+  - fatigue
+  - mana (caffeine)
+  - XP amount
+  - XP level
+  - list of permanent skills
+  - list of skills in equipped spellbook
+
+Food restores hunger.
+Drinks cure thirst.
+Sleep cures fatigue.
+Anything containing caffeine restores mana, or it regens at low fatigue
+"Healthier" food decreases fatigue slightly.
+
+States:
+ - Blinded
+ - Confused
+ - etc
+
+Items and objects:
+ |-+ walls and hallways.
+ #   large equipment/electronics
+ A-Z large living things (large enough to block line of sight)
+ a-z small living things
+ ~   liquid on the floor
+ *   money, gold
+ %   scroll (one-time-use)
+ =   spellbook (teaches skills as they are used)
+ )   ranged weapon
+ /   melee weapon
+ \   magic staff/wand
+ ^   hat/helm
+ [   armor
+ "   shoes
+ ?   potion
+ !   food
+ $   unique/quest items, tools, etc.
+ &   entrance to the digital world??
+ .   the floor
+ > stairs down
+ < stairs up
+
+Bestiary (captital variants given):
+ A 
+ B beast
+ C cyborg
+ D demon
+ E eldrict
+ F fairy
+ G grue
+ H humanoid
+ I insect
+ J
+ K
+ L 
+ M 
+ N
+ O ooze
+ P plant
+ Q (himself)
+ R robot
+ S snake
+ T
+ U undead
+ V virus
+ W wyrm
+ X
+ Y
+ Z
+
+Plot:
+
+The player has just been hired as a monster slayer at the Vortex Datacenter. Monsters are breeding in the colocation area, and one of the cabinets opens into a dungeon below the datacenter. Occasionally, threats must be battled in the digital world, which is a parallel universe where things behave a little differently.
+
+How the maps work:
+1. load a map by reading in a picture of walls and floor.
+2. The walls and floor form the "base" layer of the map. (1 of 3)
+3. The "object" layer (2 of 3) starts empty, and objects are added to it.
+4. The "creature" layer includes the player, monsters, and other NPCs.
+
+Notable monsters:
+
+The "pancake syrup" oozes:
+  Boston Molasses Monster (the boss)
+  Pure Maple Syrup
+  Agave Syrup
+  Cheap "Breakfast" Syrup
+
+Q
+
+Will mess with you and move objects around.
+If you talk to him while Fluttershy is your companion, he will become friendly, and will rescue you from one death.

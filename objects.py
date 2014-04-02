@@ -97,7 +97,7 @@ class Player(Entity):
         if dest in self.floor.layer3.keys():
             self.floor.layer3[dest].walkon()
         if dest in self.floor.layer2.keys():
-            self.floor.layer3[dest].walkon()
+            self.floor.layer2[dest].walkon()
         self.floor.layer1[dest[0]][dest[1]].walkon()
 
         if self.traverse_test(y,x):
@@ -111,10 +111,11 @@ class Item(Entity):
         Entity.__init__(self, layer=2, symbol="$", # placeholder
           traversible=True, name="Nondescript Item",
           can_be_taken=True,
-          description="This is an item with no defining qualities.",)
+          description="This is an item with no defining qualities.", **kwargs)
+          # how to pass in more arguments properly??
 
     def walkon(self):
-        shouts.append("You walked on a %s" % self.name)
+        shouts.append("You are standing on a %s" % self.name)
         
 def make_floor():
     return Entity(symbol=".", description="Bare floor.")

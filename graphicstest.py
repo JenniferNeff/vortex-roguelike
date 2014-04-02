@@ -145,6 +145,7 @@ class AlertQueue(object):
 
     def shift(self):
         self.messages.extend(objects.shouts)
+        objects.shouts = []
         try:
             message_to_show = self.messages.pop(0)
             PC.running = False # kick the player out of running upon news
@@ -197,7 +198,7 @@ def runit(stdscr):
     PC.location = PC_position
     test.layer3[PC.location] = PC
 
-    testitem = objects.Item(floor=test, location=(8,8))
+    testitem = objects.Item(floor=test, location=(6,10))
     #test.layer2[testitem.location] = testitem
 
     test.display()

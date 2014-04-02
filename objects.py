@@ -39,9 +39,9 @@ class Entity(object):
         self.location = location
         if self.floor and self.location:
             if 2 == self.layer:
-                self.floor.layer2[self] = self.location
+                self.floor.layer2[self.location] = self
             elif 3 == self.layer:
-                self.floor.layer3[self] = self.location
+                self.floor.layer3[self.location] = self
 
     def __str__(self):
         return self.symbol # there might be some better use for this
@@ -60,6 +60,7 @@ class Entity(object):
         return True
 
     # "If I attempt to step on this object, what happens?"
+    # walkon events should generally remove the player's "running" state
     def walkon(self):
         return None
 
@@ -81,6 +82,7 @@ class Player(Entity):
         self.hunger = 0
         self.thirst = 0
         self.fatigue = 0
+        self.running = False
 
         self.skills = {}
 
@@ -102,6 +104,17 @@ class Player(Entity):
             self.location = dest
             del self.floor.layer3[source]
             self.floor.layer3[dest] = self
+
+class Item(Entity):
+
+    def __init__(self, **kwargs):
+        Entity.__init__(self, layer=2, symbol="$", # placeholder
+          traversible=True, name="Nondescript Item",
+          can_be_taken=True,
+          description="This is an item with no defining qualities.",)
+
+    def walkon(self):
+        shouts.append("You walked on a %s" % self.name)
         
 def make_floor():
     return Entity(symbol=".", description="Bare floor.")
@@ -113,3 +126,5 @@ def make_wall(side="+"):
 def make_void():
     return Entity(symbol=" ", description="There's nothing there.",
                   traversible=False)
+
+shouts = []

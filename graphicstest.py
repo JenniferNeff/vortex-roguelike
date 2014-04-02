@@ -55,6 +55,7 @@ def track(limit_y, limit_x): # arguments are the size of the map
     # Printing these things breaks the display but is sometimes needed to test
     #print (limit_y, limit_x)
     #print (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
+
     return (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
 
 class Floor(object):
@@ -123,16 +124,17 @@ class Floor(object):
             # add an if statement so things don't get drawn off the map
             if (item[0] >= coords[0] and item[0] <= coords[2]) and \
                (item[1] >= coords[1] and item[1] <= coords[3]):
-                self.window.addch(item[0]-coords[0], item[1]-coords[1],
+                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
                                   self.layer2[item].symbol)
         for item in self.layer3.keys():
             if (item[0] >= coords[0] and item[0] <= coords[2]) and \
                (item[1] >= coords[1] and item[1] <= coords[3]):
-                self.window.addch(item[0]-coords[0], item[1]-coords[1],
+                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
                                   self.layer3[item].symbol)
         self.window.noutrefresh()
 
 class AlertQueue(object):
+    # implement as a collection.deque later?
 
     def __init__(self):
         self.messages = []
@@ -142,10 +144,23 @@ class AlertQueue(object):
         self.messages.append(message)
 
     def shift(self):
-        message_to_show = self.messages.pop(0)
+        self.messages.extend(objects.shouts)
+        try:
+            message_to_show = self.messages.pop(0)
+            PC.running = False # kick the player out of running upon news
+        except IndexError:
+            message_to_show = ""
         if self.messages != []:
             message_to_show = "%s [MORE]" % message_to_show
-            # wait for the player to press space
+            if "message" != mode[-1]:
+                mode.append("message")
+        else:
+            while mode[-1] == "message":
+                mode.pop()
+        self.window.clear()
+        self.window.addstr(0,0, message_to_show)
+        self.window.noutrefresh()
+        curses.doupdate()
 
     def vent(self):
         while self.messages != []:
@@ -169,7 +184,9 @@ mode = ["title"]
 def runit(stdscr):
     stdscr.clear()
 
-    stdscr.addstr("Hello Vanya, welcome to the Dungeons of Doom")
+    alerts = AlertQueue()
+
+    #stdscr.addstr("Hello Vanya, welcome to the Dungeons of Doom")
     stdscr.refresh()
     stdscr.getkey()
 
@@ -179,16 +196,24 @@ def runit(stdscr):
     PC.floor = test
     PC.location = PC_position
     test.layer3[PC.location] = PC
+
+    testitem = objects.Item(floor=test, location=(8,8))
+    #test.layer2[testitem.location] = testitem
+
     test.display()
 
     mode.append("mapnav")
+
+    alerts.push("Hello Vanya, welcome to the Dungeons of Doom")
+    #alerts.push("Second test message")
+    #alerts.push("Third test message")
 
     # Initialize the stack of panels.
     # May need to do something else to keep them in order.
     map_panel = curses.panel.new_panel(test.window)
     hud_panel = None
     menu_panel = None
-    message_panel = None
+    message_panel = curses.panel.new_panel(alerts.window)
 
     while True:
         curses.doupdate()
@@ -196,6 +221,11 @@ def runit(stdscr):
         if "q" == command:
             break
         if "mapnav" == mode[-1]:
+            alerts.shift()
+            alerts.window.clear()
             mapnavigation(command)
+        if "message" == mode[-1]:
+            if " " == command:
+                alerts.shift()
 
 curses.wrapper(runit)

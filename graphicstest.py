@@ -225,6 +225,7 @@ def runit(stdscr):
             alerts.shift()
             alerts.window.clear()
             mapnavigation(command)
+            alerts.shift()
         if "message" == mode[-1]:
             if " " == command:
                 alerts.shift()

@@ -92,7 +92,7 @@ Bestiary (captital variants given):
  C cyborg
  D demon
  E eldrict
- F fairy
+ F fae
  G grue
  H humanoid
  I insect
@@ -136,3 +136,7 @@ Q
 
 Will mess with you and move objects around.
 If you talk to him while Fluttershy is your companion, he will become friendly, and will rescue you from one death.
+
+Chess pieces
+
+Move just like their namesakes. Pawns always begin adjacent to a wall, walk to the other side, and self-promote. If you corner the king he will surrender, and trigger some interesting event.

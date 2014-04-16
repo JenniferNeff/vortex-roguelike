@@ -116,6 +116,58 @@ class Item(Entity):
 
     def walkon(self):
         shouts.append("You are standing on a %s" % self.name)
+
+class Monster(Entity):
+
+    def __init__(self, **kwargs):
+        Entity.__init__(self, layer=3, symbol="Z", #placeholder
+          traversible=False, name="Basic Zombie",
+          can_be_taken=False,
+          description="Your basic shambling zombie. \"Brains!\"", **kwargs)
+
+    def move(self, y, x):
+        source = self.location
+        dest = (self.location[0]+y, self.location[1]+x)
+        # These lines still here to allow monsters to set off traps.
+        if dest in self.floor.layer3.keys():
+            self.floor.layer3[dest].walkon()
+        if dest in self.floor.layer2.keys():
+            self.floor.layer2[dest].walkon()
+        self.floor.layer1[dest[0]][dest[1]].walkon()
+
+        if self.traverse_test(y,x):
+            self.location = dest
+            del self.floor.layer3[source]
+            self.floor.layer3[dest] = self
+
+    def pursue(self, y, x): # y, x are the coordinates to chase
+        moveY = 0
+        moveX = 0
+        if y < self.location[0]:
+            moveY = -1
+        elif y > self.location[0]:
+            moveY = 1
+        if x < self.location[1]:
+            moveX = -1
+        elif x > self.location[1]:
+            moveX = 1
+
+        if self.traverse_test(moveY, moveX):
+            self.move(moveY, moveX)
+        elif self.traverse_test(0, moveX):
+            self.move(0, moveX)
+        elif self.traverse_test(moveY, 0):
+            self.move(moveY, 0)
+
+    def wander(self): # use for stupid, confused, and blind monsters
+        moveY = random.choice((-1,0,1))
+        moveX = random.choice((-1,0,1))
+
+        if moveY != 0 or moveX != 0:
+            self.move(moveY, moveX)
+
+    # Idea: make a monster that moves like a chess knight.
+    # ...or is otherwise constrained rook/bishop/pawn style
         
 def make_floor():
     return Entity(symbol=".", description="Bare floor.")

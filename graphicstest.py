@@ -199,6 +199,7 @@ def runit(stdscr):
     test.layer3[PC.location] = PC
 
     testitem = objects.Item(floor=test, location=(6,10))
+    testmonster = objects.Monster(floor=test, location=(7,11))
     #test.layer2[testitem.location] = testitem
 
     test.display()

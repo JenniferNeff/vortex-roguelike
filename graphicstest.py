@@ -29,6 +29,12 @@ compass = {
 "n": (1,1)
 }
 
+def tick():
+    for i in PC.floor.layer2.values():
+        i.initiative -= 1
+    for i in PC.floor.layer3.values():
+        i.initiative -= 1
+
 
 def track(limit_y, limit_x): # arguments are the size of the map
     '''
@@ -180,10 +186,15 @@ class AlertQueue(object):
 def mapnavigation(command):
     if command in compass.keys():
         PC.move(compass[command][0], compass[command][1])
+    elif "t" == command:
+        PC.take()
+    while 0 < PC.initiative:
         for i in PC.floor.layer3.values():
-            i.act(PC)
+            if 0 == i.initiative:
+                i.act(PC)
         for j in HUD_list:
             j.display()
+        tick()
     PC.floor.display()
     #elif command == "l":
         # Ask player a question...
@@ -200,7 +211,7 @@ def runit(stdscr):
 
     #stdscr.addstr("Hello Vanya, welcome to the Dungeons of Doom")
     stdscr.refresh()
-    stdscr.getkey()
+#    stdscr.getkey()
 
     test = Floor(name="Testing Map")
     test.load_map("testmap2")

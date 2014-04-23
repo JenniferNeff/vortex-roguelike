@@ -52,6 +52,24 @@ player has
   - list of permanent skills
   - list of skills in equipped spellbook
 
+Commands:
+
+b - southwest
+d - drop an item
+h - west
+i - view inventory
+j - south
+k - north
+l - east
+n - southeast
+t - take the object you're standing on
+u - northeast
+y - northwest
+
+Speed:
+
+Everything that acts on a timer has Initiative and Speed. Speed is an integer, with 60 being standard. Lower number = faster = more frequent turns.
+
 Food cures hunger.
 Drinks cure thirst.
 Sleep cures fatigue.

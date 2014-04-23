@@ -36,6 +36,7 @@ class Entity(object):
         self.defense = defense
         self.attacks = attacks
         self.speed = speed
+        self.initiative = 0
         self.layer = layer
         self.floor = floor
         self.location = location
@@ -44,12 +45,13 @@ class Entity(object):
                 self.floor.layer2[self.location] = self
             elif 3 == self.layer:
                 self.floor.layer3[self.location] = self
+        self.inventory = []
 
     def __str__(self):
         return self.symbol # there might be some better use for this
 
-    def act(self, *args): # all actions that "take one action" call this
-        pass
+    def act(self): # all actions that "take one action" call this
+        self.initiative += self.speed
 
     # "Is it possible to step onto the space I want to step on?"
     def traverse_test(self,y,x):
@@ -106,10 +108,21 @@ class Player(Entity):
             self.location = dest
             del self.floor.layer3[source]
             self.floor.layer3[dest] = self
+            self.act()
 
     def attack(self, aim):
         shouts.append("You hit the %s with an ineffective placeholder attack." % \
                       self.floor.layer3[aim].name)
+        self.act()
+
+    def take(self):
+        if self.location not in self.floor.layer2.keys():
+            shouts.append("There's nothing here to take.")
+        else:
+            shouts.append("You picked up a %s." % \
+              self.floor.layer2[self.location].name)
+            self.inventory.append(self.floor.layer2.pop(self.location))
+            self.act()
 
 class Item(Entity):
 
@@ -123,6 +136,15 @@ class Item(Entity):
     def walkon(self, stomper):
         if isinstance(stomper, Player):
             shouts.append("You are standing on a %s" % self.name)
+
+class Weapon(Item):
+    pass
+
+class Food(Item):
+    pass
+
+class Spellbook(Item):
+    pass
 
 class Monster(Entity):
 
@@ -218,7 +240,8 @@ class Monster(Entity):
         if strike != None:
             self.attack(strike)
         elif adventurer.floor == self.floor:
-            self.pursue(adventurer.location[0], adventurer.location[1], -1)
+            self.pursue(adventurer.location[0], adventurer.location[1])
+        self.initiative += self.speed
 
     def walkon(self, stomper):
         if isinstance(stomper, Player):

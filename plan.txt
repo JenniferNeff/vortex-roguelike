@@ -52,7 +52,7 @@ player has
   - list of permanent skills
   - list of skills in equipped spellbook
 
-Food restores hunger.
+Food cures hunger.
 Drinks cure thirst.
 Sleep cures fatigue.
 Anything containing caffeine restores mana, or it regens at low fatigue
@@ -140,3 +140,25 @@ If you talk to him while Fluttershy is your companion, he will become friendly, 
 Chess pieces
 
 Move just like their namesakes. Pawns always begin adjacent to a wall, walk to the other side, and self-promote. If you corner the king he will surrender, and trigger some interesting event.
+
+Food and Drinks:
+
+Player's hunger meter runs from 0 to 2000 (a reference to the average human's calorie needs of approximately 2000 calories per day; allows real calorie amounts to be used for foods).
+
+If a player tries to eat something that would overflow the health meter by any amount, they instead get the message "You're not hungry enough to eat that."
+
+"Healthy" foods decrease fatigue slightly when eaten.
+
+Mesa Bar - Lightweight, moderately filling, healthy.
+Mesa Negra Bar - A Mesa Bar with light caffeine.
+Green Tea - Beverage with light caffeine; healthy.
+Black Tea - Beverage with medium caffeine.
+Black Coffee - Beverage with high caffeine.
+Iced Latteccino - Beverage with medium caffeine; moderately filling.
+Lotta Latteccino - Beverage with medium caffeine; filling.
+Cold Pizza - Filling food.
+Gyro - Filling, healthy.
+Trail Mix - Filling.
+
+Sandwiches:
+Meatball Sub - Filling.

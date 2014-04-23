@@ -29,11 +29,13 @@ compass = {
 "n": (1,1)
 }
 
-# Figure out a reasonable slice of the map to display
-# such that the PC remains in the center of the screen,
-# but the display never slips off the edges of the map.
 
 def track(limit_y, limit_x): # arguments are the size of the map
+    '''
+    Figure out a reasonable slice of the map to display such that the PC
+    remains in the center of the screen, but the display never slips off
+    the edges of the map.
+    '''
     upperleft_x = PC.location[1] - x_center
     upperleft_y = PC.location[0] - y_center
     lowerright_x = upperleft_x + (scr_x-1)
@@ -73,11 +75,15 @@ class Floor(object):
         self.mapvert = 0
 
     def load_map(self, mapfile):
+        '''
+        Build layer 1 of a map from a text file. A border of void is added to
+        each side; this prevents errors when fleeing monsters reach the edge.
+        '''
         getmap = open(mapfile, 'r')
         for line in getmap:
             newline = []
             self.mapvert += 1
-            for char in range(len(line)):
+            for char in range(len(line)+1):
                 if self.maphoriz < char:
                     self.maphoriz = char
                 try:
@@ -94,9 +100,12 @@ class Floor(object):
                 except IndexError:
                     newline.append(objects.make_void())
             self.layer1.append(newline)
+        self.layer1.append([objects.make_void()])
+        self.layer1.insert(0, [objects.make_void()])
         getmap.close()
 
         for line in self.layer1:
+            line.insert(0, objects.make_void())
             while len(line) < self.maphoriz:
                 line.append(objects.make_void())
 
@@ -171,8 +180,10 @@ class AlertQueue(object):
 def mapnavigation(command):
     if command in compass.keys():
         PC.move(compass[command][0], compass[command][1])
-        for i in HUD_list:
-            i.display()
+        for i in PC.floor.layer3.values():
+            i.act(PC)
+        for j in HUD_list:
+            j.display()
     PC.floor.display()
     #elif command == "l":
         # Ask player a question...
@@ -218,6 +229,7 @@ def runit(stdscr):
     message_panel = curses.panel.new_panel(alerts.window)
 
     while True:
+
         curses.doupdate()
         command = stdscr.getkey()
         if "q" == command:
@@ -230,5 +242,6 @@ def runit(stdscr):
         if "message" == mode[-1]:
             if " " == command:
                 alerts.shift()
+
 
 curses.wrapper(runit)

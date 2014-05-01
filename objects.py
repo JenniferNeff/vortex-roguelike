@@ -119,7 +119,7 @@ class Player(Entity):
         if self.location not in self.floor.layer2.keys():
             shouts.append("There's nothing here to take.")
         else:
-            shouts.append("You picked up a %s." % \
+            shouts.append("You pick up a %s." % \
               self.floor.layer2[self.location].name)
             self.inventory.append(self.floor.layer2.pop(self.location))
             self.act()
@@ -152,6 +152,7 @@ class Monster(Entity):
         Entity.__init__(self, layer=3, symbol="Z", #placeholder
           traversible=False, name="Basic Zombie",
           can_be_taken=False,
+          speed=80,
           description="Your basic shambling zombie. \"Brains!\"", **kwargs)
 
     def move(self, y, x):

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import objects
-import curses, traceback
+import curses, traceback, string
 import curses.panel
 
 # These are dummy values.
@@ -76,7 +76,7 @@ class Floor(object):
         self.layer2 = {} # object: (i,j) : object
         self.layer3 = {}
 
-        self.window = curses.newwin(scr_y-1, scr_x, 1, 0)
+        self.window = curses.newwin(scr_y-2, scr_x, 1, 0)
         self.maphoriz = 0
         self.mapvert = 0
 
@@ -148,6 +148,46 @@ class Floor(object):
                                   self.layer3[item].symbol)
         self.window.noutrefresh()
 
+class InventoryMenu(object):
+
+    def __init__(self):
+        self.window = curses.newwin(scr_y-1, scr_x, 1, 0)
+
+    def display(self, hoard, query=None): # hoard usually = PC.inventory
+        hoard.sort()
+        self.window.clear()
+        if None == query:
+            self.window.addstr(1,1, "You are carrying:")
+        else:
+            self.window.addstr(1,1, query)
+
+        self.window.move(3,1)
+        if 0 == len(hoard):
+            self.window.addstr("Nothing!")
+        else:
+            for i in range(len(hoard)):
+                self.window.addstr("%s: %s" % (string.ascii_uppercase[i],
+                                               hoard[i].name))
+                if PC.weapon == hoard[i]:
+                    self.window.addstr(" (Weapon in hand)")
+                elif PC.helm == hoard[i]:
+                    self.window.addstr(" (On head)")
+                elif PC.armor == hoard[i]:
+                    self.window.addstr(" (On body)")
+                elif PC.shoes == hoard[i]:
+                    self.window.addstr(" (On feet)")
+                elif PC.ring_right == hoard[i]:
+                    self.window.addstr(" (On right hand)")
+                elif PC.ring_left == hoard[i]:
+                    self.window.addstr(" (On left hand)")
+                elif PC.spellbook == hoard[i]:
+                    self.window.addstr(" (Reading)")
+                self.window.move(3+i, 1)
+
+        self.window.addstr(20,0, "Press space to return to the map")
+        self.window.noutrefresh()
+        curses.doupdate()
+
 class AlertQueue(object):
     # implement as a collection.deque later?
 
@@ -181,7 +221,16 @@ class AlertQueue(object):
     def vent(self):
         while self.messages != []:
             self.shift()
-            
+
+class HUD(object):
+
+    def __init__(self):
+        self.window = curses.newwin(1, scr_x, scr_y-1, 0)
+        self.frame = "Level: {0.level} HP: {0.hp} Mana: {0.mana}"
+
+    def display(self, level, hitpoints, mana):
+        self.window.addstr(0,0, self.frame.format(PC))
+        self.window.noutrefresh()
 
 def mapnavigation(command):
     if command in compass.keys():
@@ -196,9 +245,25 @@ def mapnavigation(command):
             j.display()
         tick()
     PC.floor.display()
-    #elif command == "l":
-        # Ask player a question...
-        # will need a separate window to sit on top and contain messages
+
+#def look(command):
+#    if command in compass.keys():
+        # move the cursor
+
+def inventory(hoard, inv, command):
+    hoard.display(PC.inventory, query=None)
+    curses.panel.update_panels()
+    curses.doupdate()
+    inv.top()
+    inv.show()
+
+    # build in the ability to anwswer a question by selecting an item.
+    if " " == command:
+        mode.pop()
+        mode.append("message")
+        inv.hide()
+        curses.panel.update_panels()
+        curses.doupdate()
 
 # Modes are: title, mapnav, maplook, menu...more?
 
@@ -208,8 +273,9 @@ def runit(stdscr):
     stdscr.clear()
 
     alerts = AlertQueue()
+    invent = InventoryMenu()
+    heads_up_display = HUD()
 
-    #stdscr.addstr("Hello Vanya, welcome to the Dungeons of Doom")
     stdscr.refresh()
 #    stdscr.getkey()
 
@@ -229,30 +295,43 @@ def runit(stdscr):
     mode.append("mapnav")
 
     alerts.push("Hello Vanya, welcome to the Dungeons of Doom")
-    #alerts.push("Second test message")
-    #alerts.push("Third test message")
 
     # Initialize the stack of panels.
     # May need to do something else to keep them in order.
     map_panel = curses.panel.new_panel(test.window)
-    hud_panel = None
+    hud_panel = curses.panel.new_panel(heads_up_display.window)
     menu_panel = None
     message_panel = curses.panel.new_panel(alerts.window)
+    inventory_panel = curses.panel.new_panel(invent.window)
+
+    command = " "
+    curses.curs_set(0)
 
     while True:
 
-        curses.doupdate()
-        command = stdscr.getkey()
+        #curses.doupdate()
+        #command = stdscr.getkey()
         if "q" == command:
+            curses.curs_set(1)
             break
-        if "mapnav" == mode[-1]:
+        elif "i" == command:
+            mode.append("inventory")
+
+        if "inventory" == mode[-1]:
+            #alerts.push("Yay inventory?") # testing
+            inventory(invent, inventory_panel, command)
+            curses.doupdate()
+        elif "mapnav" == mode[-1]:
             alerts.shift()
             alerts.window.clear()
             mapnavigation(command)
             alerts.shift()
+            heads_up_display.display(PC.level, PC.hp, PC.mana)
         if "message" == mode[-1]:
             if " " == command:
                 alerts.shift()
+        curses.doupdate()
+        command = stdscr.getkey()
 
 
 curses.wrapper(runit)

@@ -109,6 +109,8 @@ class Player(Entity):
             del self.floor.layer3[source]
             self.floor.layer3[dest] = self
             self.act()
+        else:
+            self.running = False #doesn't stop player from attacking
 
     def attack(self, aim):
         shouts.append("You hit the %s with an ineffective placeholder attack." % \
@@ -126,6 +128,16 @@ class Player(Entity):
 
     def rest(self):
         self.act()
+
+#    def run(self, y, x):
+#        self.running = (y,x)
+#        self.move(y,x)
+#        while self.running and self.traverse_test(y,x):
+#            self.move(y,x)
+#            if 0 != len(shouts):
+#                self.running = False
+#        self.running = False
+            
 
 class Item(Entity):
 
@@ -247,6 +259,9 @@ class Monster(Entity):
         strike = self.check_adjacency(adventurer)
         if strike != None:
             self.attack(strike)
+            adventurer.running = False
+            # prevents PC from autoattacking at the end of a run if the monster
+            # gets in the first swing.
         elif adventurer.floor == self.floor:
             self.pursue(adventurer.location[0], adventurer.location[1])
         self.initiative += self.speed

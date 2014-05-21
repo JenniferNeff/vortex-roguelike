@@ -73,7 +73,7 @@ class Floor(object):
         self.depth = depth
 
         self.layer1 = []
-        self.layer2 = {} # object: (i,j) : object
+        self.layer2 = {} # (i,j) : object
         self.layer3 = {}
 
         self.window = curses.newwin(scr_y-2, scr_x, 1, 0)
@@ -235,11 +235,16 @@ class HUD(object):
         self.window.addstr(0,0, self.frame.format(PC))
         self.window.noutrefresh()
 
-def mapnavigation(command):
+def mapnavigation(command): # see if running can be totally handled here
     if command in compass.keys():
         PC.move(compass[command][0], compass[command][1])
+    elif command.lower() in compass.keys():
+        PC.move(compass[command.lower()][0], compass[command.lower()][1])
+        PC.running = True
     elif "t" == command:
         PC.take()
+    elif "." == command:
+        PC.rest()
     while 0 < PC.initiative:
         for i in PC.floor.layer3.values():
             if 0 == i.initiative:
@@ -247,6 +252,8 @@ def mapnavigation(command):
         for j in HUD_list:
             j.display()
         tick()
+    while PC.running:
+        mapnavigation(command.lower())
     PC.floor.display()
 
 #def look(command):
@@ -335,8 +342,6 @@ def runit(stdscr):
                 mode.append("inventory")
                 inventory_question = "Which item would you like to Invoke?"
                 command = None
-        elif "." == command:
-            PC.rest()
 
         if "inventory" == mode[-1]:
             alerts.window.clear()

@@ -124,6 +124,9 @@ class Player(Entity):
             self.inventory.append(self.floor.layer2.pop(self.location))
             self.act()
 
+    def rest(self):
+        self.act()
+
 class Item(Entity):
 
     def __init__(self, **kwargs):

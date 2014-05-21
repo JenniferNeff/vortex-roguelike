@@ -321,12 +321,6 @@ def runit(stdscr):
 
     while True:
 
-# Rewrite the inventory so that it is a one-time request for a valid command,
-# rather than a mode. Needs to show the screen, ask for a response, and act.
-# A loop isn't really required.
-
-# Actually this seems fine for now.
-
         if "q" == command:
             curses.curs_set(1)
             break
@@ -341,6 +335,8 @@ def runit(stdscr):
                 mode.append("inventory")
                 inventory_question = "Which item would you like to Invoke?"
                 command = None
+        elif "." == command:
+            PC.rest()
 
         if "inventory" == mode[-1]:
             alerts.window.clear()

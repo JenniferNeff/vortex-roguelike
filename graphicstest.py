@@ -152,10 +152,12 @@ class InventoryMenu(object):
 
     def __init__(self):
         self.window = curses.newwin(scr_y-1, scr_x, 1, 0)
+        self.listing = {}
 
     def display(self, hoard, query=None): # hoard usually = PC.inventory
         hoard.sort()
         self.window.clear()
+        self.listing.clear()
         if None == query:
             self.window.addstr(1,1, "You are carrying:")
         else:
@@ -168,6 +170,7 @@ class InventoryMenu(object):
             for i in range(len(hoard)):
                 self.window.addstr("%s: %s" % (string.ascii_uppercase[i],
                                                hoard[i].name))
+                self.listing[string.ascii_lowercase[i]] = hoard[i]
                 if PC.weapon == hoard[i]:
                     self.window.addstr(" (Weapon in hand)")
                 elif PC.helm == hoard[i]:
@@ -184,7 +187,7 @@ class InventoryMenu(object):
                     self.window.addstr(" (Reading)")
                 self.window.move(3+i, 1)
 
-        self.window.addstr(20,0, "Press space to return to the map")
+        self.window.addstr(20,0, "Press space to exit this screen")
         self.window.noutrefresh()
         curses.doupdate()
 
@@ -226,9 +229,9 @@ class HUD(object):
 
     def __init__(self):
         self.window = curses.newwin(1, scr_x, scr_y-1, 0)
-        self.frame = "Level: {0.level} HP: {0.hp} Mana: {0.mana}"
+        self.frame = "Level: {0.level}   HP: {0.hp}   Mana: {0.mana}"
 
-    def display(self, level, hitpoints, mana):
+    def display(self):
         self.window.addstr(0,0, self.frame.format(PC))
         self.window.noutrefresh()
 
@@ -250,20 +253,29 @@ def mapnavigation(command):
 #    if command in compass.keys():
         # move the cursor
 
-def inventory(hoard, inv, command):
-    hoard.display(PC.inventory, query=None)
+def inventory(hoard, inv, command, query=None):
+    hoard.display(PC.inventory, query)
     curses.panel.update_panels()
     curses.doupdate()
     inv.top()
     inv.show()
 
-    # build in the ability to anwswer a question by selecting an item.
     if " " == command:
         mode.pop()
         mode.append("message")
         inv.hide()
         curses.panel.update_panels()
         curses.doupdate()
+        return None
+    elif None == command:
+        pass
+    elif command.isalpha():
+        mode.pop()
+        mode.append("message")
+        inv.hide()
+        curses.panel.update_panels()
+        curses.doupdate()
+        return hoard.listing[command]
 
 # Modes are: title, mapnav, maplook, menu...more?
 
@@ -309,24 +321,41 @@ def runit(stdscr):
 
     while True:
 
-        #curses.doupdate()
-        #command = stdscr.getkey()
+# Rewrite the inventory so that it is a one-time request for a valid command,
+# rather than a mode. Needs to show the screen, ask for a response, and act.
+# A loop isn't really required.
+
+# Actually this seems fine for now.
+
         if "q" == command:
             curses.curs_set(1)
             break
         elif "i" == command:
             mode.append("inventory")
+            inventory_question = None
+            command = None
+        elif "I" == command:
+            if [] == PC.inventory:
+                alerts.push("You're not carrying anything.")
+            else:
+                mode.append("inventory")
+                inventory_question = "Which item would you like to Invoke?"
+                command = None
 
         if "inventory" == mode[-1]:
-            #alerts.push("Yay inventory?") # testing
-            inventory(invent, inventory_panel, command)
+            alerts.window.clear()
+            invoked = inventory(invent, inventory_panel, command,
+                      query=inventory_question)
+            if None != invoked:
+                invoked.use(user=PC)
+                curses.doupdate()
+                alerts.shift()
+                heads_up_display.display()
             curses.doupdate()
         elif "mapnav" == mode[-1]:
-            alerts.shift()
-            alerts.window.clear()
             mapnavigation(command)
             alerts.shift()
-            heads_up_display.display(PC.level, PC.hp, PC.mana)
+            heads_up_display.display()
         if "message" == mode[-1]:
             if " " == command:
                 alerts.shift()

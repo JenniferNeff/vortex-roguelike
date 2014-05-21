@@ -137,6 +137,10 @@ class Item(Entity):
         if isinstance(stomper, Player):
             shouts.append("You are standing on a %s" % self.name)
 
+    def use(self, user):
+        shouts.append("You invoke the %s and gain a level!" % self.name)
+        user.level += 1
+
 class Weapon(Item):
     pass
 

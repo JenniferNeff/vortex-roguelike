@@ -123,21 +123,22 @@ class Player(Entity):
         else:
             shouts.append("You pick up a %s." % \
               self.floor.layer2[self.location].name)
+            self.floor.layer2[self.location].when_taken()
             self.inventory.append(self.floor.layer2.pop(self.location))
+            self.act()
+
+    def drop(self, item):
+        if self.location in self.floor.layer2.keys():
+            shouts.append("There's already something on the floor.")
+        else:
+            shouts.append("You drop the %s." % item.name)
+            self.floor.layer2[self.location] = item
+            self.inventory.remove(item)
+            item.when_dropped()
             self.act()
 
     def rest(self):
         self.act()
-
-#    def run(self, y, x):
-#        self.running = (y,x)
-#        self.move(y,x)
-#        while self.running and self.traverse_test(y,x):
-#            self.move(y,x)
-#            if 0 != len(shouts):
-#                self.running = False
-#        self.running = False
-            
 
 class Item(Entity):
 
@@ -155,6 +156,12 @@ class Item(Entity):
     def use(self, user):
         shouts.append("You invoke the %s and gain a level!" % self.name)
         user.level += 1
+
+    def when_taken(self):
+        pass
+
+    def when_dropped(self):
+        pass
 
 class Weapon(Item):
     pass

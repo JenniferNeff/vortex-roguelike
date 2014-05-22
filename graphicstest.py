@@ -7,7 +7,7 @@ import curses.panel
 # These are dummy values.
 # standard screen size is 80 x 24.
 scr_x = 80
-scr_y = 22
+scr_y = 24
 x_center = scr_x / 2
 y_center = scr_y / 2
 
@@ -78,7 +78,7 @@ class Floor(object):
 
         self.window = curses.newwin(scr_y-2, scr_x, 1, 0)
         self.maphoriz = 0
-        self.mapvert = 0
+        self.mapvert = 2
 
     def load_map(self, mapfile):
         '''
@@ -325,6 +325,7 @@ def runit(stdscr):
 
     command = " "
     curses.curs_set(0)
+    menu_flag = None
 
     while True:
 
@@ -342,13 +343,26 @@ def runit(stdscr):
                 mode.append("inventory")
                 inventory_question = "Which item would you like to Invoke?"
                 command = None
+                menu_flag = "Invoke"
+
+        elif "d" == command:
+            if [] == PC.inventory:
+                alerts.push("You're not carrying anything.")
+            else:
+                mode.append("inventory")
+                inventory_question = "Which item would you like to drop?"
+                command = None
+                menu_flag = "drop"
 
         if "inventory" == mode[-1]:
             alerts.window.clear()
             invoked = inventory(invent, inventory_panel, command,
                       query=inventory_question)
             if None != invoked:
-                invoked.use(user=PC)
+                if "Invoke" == menu_flag:
+                    invoked.use(user=PC)
+                if "drop" == menu_flag:
+                    PC.drop(invoked)
                 curses.doupdate()
                 alerts.shift()
                 heads_up_display.display()

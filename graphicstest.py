@@ -7,7 +7,7 @@ import curses.panel
 # These are dummy values.
 # standard screen size is 80 x 24.
 scr_x = 80
-scr_y = 24
+scr_y = 22
 x_center = scr_x / 2
 y_center = scr_y / 2
 
@@ -260,7 +260,13 @@ def mapnavigation(command): # see if running can be totally handled here
 #    if command in compass.keys():
         # move the cursor
 
-def inventory(hoard, inv, command, query=None):
+def inventory(hoard, inv, command, flag='i'):
+    if 'i' == flag:
+        query = "You are carrying:"
+    elif 'I' == flag:
+        query = "Which item would you like to Invoke?"
+    elif 'd' == flag:
+        query = "Which item would you like to drop?"
     hoard.display(PC.inventory, query)
     curses.panel.update_panels()
     curses.doupdate()
@@ -276,13 +282,13 @@ def inventory(hoard, inv, command, query=None):
         return None
     elif None == command:
         pass
-    elif command.isalpha():
+    elif command.isalpha() and command.lower() in hoard.listing.keys():
         mode.pop()
         mode.append("message")
         inv.hide()
         curses.panel.update_panels()
         curses.doupdate()
-        return hoard.listing[command]
+        return hoard.listing[command.lower()]
 
 # Modes are: title, mapnav, maplook, menu...more?
 
@@ -332,37 +338,35 @@ def runit(stdscr):
         if "q" == command:
             curses.curs_set(1)
             break
-        elif "i" == command:
+        elif 'i' == command:
             mode.append("inventory")
-            inventory_question = None
+            menu_flag = command
             command = None
         elif "I" == command:
             if [] == PC.inventory:
                 alerts.push("You're not carrying anything.")
             else:
                 mode.append("inventory")
-                inventory_question = "Which item would you like to Invoke?"
+                menu_flag = command
                 command = None
-                menu_flag = "Invoke"
 
         elif "d" == command:
             if [] == PC.inventory:
                 alerts.push("You're not carrying anything.")
             else:
                 mode.append("inventory")
-                inventory_question = "Which item would you like to drop?"
+                menu_flag = command
                 command = None
-                menu_flag = "drop"
 
         if "inventory" == mode[-1]:
             alerts.window.clear()
-            invoked = inventory(invent, inventory_panel, command,
-                      query=inventory_question)
-            if None != invoked:
-                if "Invoke" == menu_flag:
-                    invoked.use(user=PC)
-                if "drop" == menu_flag:
-                    PC.drop(invoked)
+            returned_item = inventory(invent, inventory_panel, command,
+                                      flag=menu_flag)
+            if None != returned_item: # Move this into inventory function
+                if "I" == menu_flag:
+                    returned_item.use(user=PC)
+                if "d" == menu_flag:
+                    PC.drop(returned_item)
                 curses.doupdate()
                 alerts.shift()
                 heads_up_display.display()

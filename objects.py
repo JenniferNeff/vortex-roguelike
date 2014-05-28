@@ -152,6 +152,7 @@ class Item(Entity):
     def walkon(self, stomper):
         if isinstance(stomper, Player):
             shouts.append("You are standing on a %s" % self.name)
+            stomper.running = False
 
     def use(self, user):
         shouts.append("You invoke the %s and gain a level!" % self.name)

@@ -267,6 +267,8 @@ def inventory(hoard, inv, command, flag='i'):
         query = "Which item would you like to Invoke?"
     elif 'd' == flag:
         query = "Which item would you like to drop?"
+    elif 'e' == flag:
+        query = "Which item would you like to examine?"
     hoard.display(PC.inventory, query)
     curses.panel.update_panels()
     curses.doupdate()
@@ -338,11 +340,7 @@ def runit(stdscr):
         if "q" == command:
             curses.curs_set(1)
             break
-        elif 'i' == command:
-            mode.append("inventory")
-            menu_flag = command
-            command = None
-        elif "I" == command:
+        elif command in 'iIde':
             if [] == PC.inventory:
                 alerts.push("You're not carrying anything.")
             else:
@@ -350,13 +348,9 @@ def runit(stdscr):
                 menu_flag = command
                 command = None
 
-        elif "d" == command:
-            if [] == PC.inventory:
-                alerts.push("You're not carrying anything.")
-            else:
-                mode.append("inventory")
-                menu_flag = command
-                command = None
+#        elif "v" == command:
+#            alerts.push("Select something to view. Press space to cancel.")
+#            mode.append("view")
 
         if "inventory" == mode[-1]:
             alerts.window.clear()
@@ -365,11 +359,15 @@ def runit(stdscr):
             if None != returned_item: # Move this into inventory function
                 if "I" == menu_flag:
                     returned_item.use(user=PC)
-                if "d" == menu_flag:
+                elif "d" == menu_flag:
                     PC.drop(returned_item)
+                elif 'e' == menu_flag:
+                    alerts.push(returned_item.description)
+
                 curses.doupdate()
                 alerts.shift()
                 heads_up_display.display()
+                
             curses.doupdate()
         elif "mapnav" == mode[-1]:
             mapnavigation(command)

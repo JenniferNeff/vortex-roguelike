@@ -1,3 +1,10 @@
+Checklist:
+
+- Cutscenes
+ - Dialogue choices in cutscenes
+- Ability to look at items and monsters
+
+
 Every object has:
  - a name
  - a symbol: @ # ! o

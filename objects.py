@@ -16,6 +16,7 @@ class Entity(object):
 
     def __init__(self, name="Unknown entity", symbol=None, color=7,
                  description="You don't know about this yet",
+                 longdesc="You don't know about this yet, longer",
                  xp=0, level=None, alignment=None, opaque=False,
                  traversible=True, can_be_taken=False,
                  hp=None, mana=None, defense={}, attacks={}, speed=60,
@@ -25,6 +26,7 @@ class Entity(object):
         self.symbol = symbol
         self.color = color
         self.description = description
+        self.longdesc = longdesc
         self.xp = xp
         self.level = level
         self.alignment = alignment
@@ -140,13 +142,19 @@ class Player(Entity):
     def rest(self):
         self.act()
 
+sampledescription = """
+This is a long description of an item. It would be simple enough to pass in arguments with further details about this item, such as enchantments, etc.
+"""
+
 class Item(Entity):
 
     def __init__(self, **kwargs):
         Entity.__init__(self, layer=2, symbol="$", # placeholder
           traversible=True, name="Nondescript Item",
           can_be_taken=True,
-          description="This is an item with no defining qualities.", **kwargs)
+          description="Short description of a nondescript item.",
+          longdesc=sampledescription,
+          **kwargs)
           # how to pass in more arguments properly??
 
     def walkon(self, stomper):

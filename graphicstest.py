@@ -191,6 +191,33 @@ class InventoryMenu(object):
         self.window.noutrefresh()
         curses.doupdate()
 
+class Cutscene(object):
+    '''
+    Display a full screen with a title (like an item's name, or the name of
+    an NPC you are talking to) and some content, and then a set of choices
+    (dialogue options, choices for how to interact with an object, etc.)
+    '''
+
+    def __init__(self, title, content, options):
+        self.window = curses.newwin(scr_y-1, scr_x, 1, 0)
+        self.title = title
+        self.content = content
+        if None == options:
+            self.options = ["Press space to continue"]
+        else:
+            self.options = options
+
+    def display(self):
+        self.window.clear()
+        self.window.addstr(1,1, self.title)
+        self.window.addstr(3,1, self.content)
+
+        self.window.move(20-len(self.options),1)
+        for i in range(len(self.options)):
+            self.window.addstr("%s: %s" % (i+1, self.options[i]))
+        self.window.noutrefresh()
+        curses.doupdate()
+
 class AlertQueue(object):
     # implement as a collection.deque later?
 
@@ -255,8 +282,8 @@ def mapnavigation(command): # see if running can be totally handled here
     while PC.running:
         mapnavigation(command.lower())
     PC.floor.display()
-
-#def look(command):
+                      # START HERE!!!
+#def view(command):
 #    if command in compass.keys():
         # move the cursor
 
@@ -269,6 +296,8 @@ def inventory(hoard, inv, command, flag='i'):
         query = "Which item would you like to drop?"
     elif 'e' == flag:
         query = "Which item would you like to examine?"
+    elif 'E' == flag:
+        query = "Which item would you like to Examine Closely?"
     hoard.display(PC.inventory, query)
     curses.panel.update_panels()
     curses.doupdate()
@@ -291,6 +320,32 @@ def inventory(hoard, inv, command, flag='i'):
         curses.panel.update_panels()
         curses.doupdate()
         return hoard.listing[command.lower()]
+
+def cutscene(title, content, options, command):
+    cut = Cutscene(title, content, options)
+    cutscene_panel = curses.panel.new_panel(cut.window)
+    cut.display()
+    curses.panel.update_panels()
+    #curses.doupdate()
+    cutscene_panel.top()
+    cutscene_panel.show()
+
+    if " " == command:
+        mode.pop()
+        mode.append("message")
+        cutscene_panel.hide()
+        curses.panel.update_panels()
+        curses.doupdate()
+        return None
+    elif None == command:
+        pass
+    elif command.isdigit() and command < len(options):
+        mode.pop()
+        mode.append("message")
+        cutscene_panel.hide()
+        curses.panel.update_panels()
+        curses.doupdate()
+        return command - 1
 
 # Modes are: title, mapnav, maplook, menu...more?
 
@@ -340,7 +395,7 @@ def runit(stdscr):
         if "q" == command:
             curses.curs_set(1)
             break
-        elif command in 'iIde':
+        elif command in 'iIdeE':
             if [] == PC.inventory:
                 alerts.push("You're not carrying anything.")
             else:
@@ -348,9 +403,9 @@ def runit(stdscr):
                 menu_flag = command
                 command = None
 
-#        elif "v" == command:
-#            alerts.push("Select something to view. Press space to cancel.")
-#            mode.append("view")
+        elif "v" == command:
+            alerts.push("Select something to view. Press space to cancel.")
+            mode.append("view")
 
         if "inventory" == mode[-1]:
             alerts.window.clear()
@@ -363,6 +418,9 @@ def runit(stdscr):
                     PC.drop(returned_item)
                 elif 'e' == menu_flag:
                     alerts.push(returned_item.description)
+                elif 'E' == menu_flag:
+                    cutscene(returned_item.name, returned_item.longdesc, None, command)
+                    #mode.append('cutscene')
 
                 curses.doupdate()
                 alerts.shift()
@@ -373,11 +431,14 @@ def runit(stdscr):
             mapnavigation(command)
             alerts.shift()
             heads_up_display.display()
+        #elif 'cutscene' == mode[-1]:
+        #    cutscene(returned_item.name, returned_item.longdesc, None, command)
+        elif "view" == mode[-1]:
+            view(command)
         if "message" == mode[-1]:
             if " " == command:
                 alerts.shift()
         curses.doupdate()
         command = stdscr.getkey()
-
 
 curses.wrapper(runit)

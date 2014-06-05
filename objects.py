@@ -158,7 +158,7 @@ class Item(Entity):
           # how to pass in more arguments properly??
 
     def walkon(self, stomper):
-        if isinstance(stomper, Player):
+        if isinstance(stomper, Player) and (stomper.location == self.location):
             shouts.append("You are standing on a %s" % self.name)
             stomper.running = False
 

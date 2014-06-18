@@ -12,11 +12,15 @@
 
 import random
 
+# def_article: "the " for most things. "" for uniques with proper names.
+# indef_article: "a " or "an " for most things, "the" for uniques
+
 class Entity(object):
 
     def __init__(self, name="Unknown entity", symbol=None, color=7,
                  description="You don't know about this yet",
                  longdesc="You don't know about this yet, longer",
+                 def_article="the ", indef_article="a ",
                  xp=0, level=None, alignment=None, opaque=False,
                  traversible=True, can_be_taken=False,
                  hp=None, mana=None, defense={}, attacks={}, speed=60,
@@ -27,6 +31,8 @@ class Entity(object):
         self.color = color
         self.description = description
         self.longdesc = longdesc
+        self.def_article = def_article
+        self.indef_article = indef_article
         self.xp = xp
         self.level = level
         self.alignment = alignment
@@ -143,7 +149,9 @@ class Player(Entity):
         self.act()
 
 sampledescription = """
-This is a long description of an item. It would be simple enough to pass in arguments with further details about this item, such as enchantments, etc.
+This is a long description of an item. It would be simple enough to pass in
+arguments with further details about this item, such as enchantments, etc.
+It has infinite charges, so try Invoking it.
 """
 
 class Item(Entity):

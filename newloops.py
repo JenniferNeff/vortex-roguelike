@@ -17,6 +17,13 @@ PC = objects.Player()
 PC_position = (5,5) # 86, 11 to test
 HUD_list = []
 
+# Global values for tracking where the map window is.
+# Allows the player to select cells visually from the display.
+# perhaps change this so that the floor itself remembers, to not use globals?
+
+x_offset = 0
+y_offset = 0
+
 # Basic movement keys; same as in Rogue
 compass = {
 "h": (0,-1),
@@ -63,6 +70,12 @@ def track(limit_y, limit_x): # arguments are the size of the map
     # Printing these things breaks the display but is sometimes needed to test
     #print (limit_y, limit_x)
     #print (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
+
+    # set the globals
+    global x_offset
+    global y_offset
+    x_offset = upperleft_x
+    y_offset = upperleft_y
 
     return (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
 
@@ -148,6 +161,17 @@ class Floor(object):
                                   self.layer3[item].symbol)
         self.window.noutrefresh()
 
+    def probe(self, coordinates):
+        """
+        Return whatever object is visible on the map at that location.
+        """
+        if coordinates in self.layer3.keys():
+            return self.layer3[coordinates]
+        elif coordinates in self.layer2.keys():
+            return self.layer2[coordinates]
+        else:
+            return self.layer1[coordinates[0]][coordinates[1]]
+
 class InventoryMenu(object):
 
     def __init__(self):
@@ -197,20 +221,29 @@ class Dialogue(object):
     (dialogue options, choices for how to interact with an object, etc.)
     '''
 
-    def __init__(self):
+    def __init__(self, title, content, options):
         self.window = curses.newwin(scr_y-1, scr_x, 1, 0)
+        self.title = title
+        self.content = content
+        self.options = options
 
-    def display(self, title, content, options):
-        if None == options:
-            options = ["Press space to continue"]
+    def display(self):
+        if None == self.options:
+            self.options = ["Continue"]
         self.window.clear()
-        self.window.addstr(1,1, title)
-        self.window.addstr(3,1, content)
+        self.window.addstr(1,1, self.title)
+        self.window.addstr(3,1, self.content)
 
-        self.window.move(20-len(options),1)
-        for i in range(len(options)):
-            self.window.addstr("%s: %s" % (i+1, options[i]))
+        self.window.move(20-len(self.options),1)
+        for i in range(len(self.options)):
+            self.window.addstr("%s: %s" % (i+1, self.options[i]))
         self.window.noutrefresh()
+        curses.doupdate()
+        dialogueoption = "0"
+        while not int(dialogueoption)-1 in range(len(self.options)):
+            dialogueoption = self.window.getkey()
+            if not dialogueoption.isdigit():
+                dialogueoption = "0"
 
 class AlertQueue(object):
     # implement as a collection.deque later?
@@ -262,6 +295,11 @@ def check_command(win,c):
         return c
 
 def new_map_loop(command=None):
+    '''
+    Move the player around on the map, and perform simple actions (anything
+    that can be accomplished by calling PC.foo(bar) and won't kick the game out
+    of map mode). More complex actions are returned back to the main loop.
+    '''
     command = check_command(PC.floor.window, command)
     if command in compass.keys():
         PC.move(compass[command][0], compass[command][1])
@@ -286,11 +324,39 @@ def new_map_loop(command=None):
     PC.floor.display()
     curses.doupdate
     mode = 'mapnav'
-    
-                      # START HERE!!!
-#def view(command):
-#    if command in compass.keys():
-        # move the cursor
+
+def view_loop(command=None):
+    curses.curs_set(2)
+    crosshairs = [y_center, x_center]
+    PC.floor.window.move(crosshairs[0], crosshairs[1])
+    command = check_command(PC.floor.window, command)
+    while "\n" != command and " " != command:
+        if command in compass.keys():
+            crosshairs = [crosshairs[0]+compass[command][0],
+                          crosshairs[1]+compass[command][1]]
+        elif command.lower() in compass.keys():
+            crosshairs = [crosshairs[0]+compass[command.lower()][0]*5,
+                          crosshairs[1]+compass[command.lower()][1]*5]
+        crosshairs[0] = max(crosshairs[0], 0)
+        crosshairs[0] = min(crosshairs[0], scr_y-3)
+        crosshairs[1] = max(crosshairs[1], 0)
+        crosshairs[1] = min(crosshairs[1], scr_x-1)
+      
+        PC.floor.window.move(crosshairs[0], crosshairs[1])
+        command = PC.floor.window.getkey()
+
+    if "\n" == command:
+        mode = 'mapnav' # exit view mode
+        curses.curs_set(0)
+        PC.floor.display()
+        curses.doupdate
+        return (crosshairs[0]+y_offset, crosshairs[1]+x_offset)
+    elif " " == command:
+        mode = 'mapnav' # exit view mode
+        curses.curs_set(0)
+        PC.floor.display()
+        curses.doupdate
+        return None
 
 def new_inventory_loop(hoard, inv, command):
     if 'i' == command:
@@ -325,9 +391,9 @@ def new_inventory_loop(hoard, inv, command):
             inv.hide()
             return hoard.listing[command.lower()]
         command = None
-'''
-def cutscene(title, content, options, command):
-    cut = Cutscene(title, content, options)
+
+def cutscene(title, content, options, command=None):
+    cut = Dialogue(title, content, options)
     cutscene_panel = curses.panel.new_panel(cut.window)
     cut.display()
     curses.panel.update_panels()
@@ -335,29 +401,12 @@ def cutscene(title, content, options, command):
     cutscene_panel.top()
     cutscene_panel.show()
 
-    if " " == command:
-        mode.pop()
-        mode.append("message")
-        cutscene_panel.hide()
-        curses.panel.update_panels()
-        curses.doupdate()
-        return None
-    elif None == command:
-        pass
-    elif command.isdigit() and command < len(options):
-        mode.pop()
-        mode.append("message")
-        cutscene_panel.hide()
-        curses.panel.update_panels()
-        curses.doupdate()
-        return command - 1
-'''
-
 # Modes are:
 # title : title screen? Maybe just make this a cutscene
 # mapnav : map navigation
 # inventory : viewing an inventory menu
 # cutscene : view a screen with title, text, and a few options
+# view : move a cursor around the map
 
 mode = 'title'
 
@@ -416,9 +465,27 @@ def runit(stdscr):
                 else:
                     mode = 'inventory'
                     menu_flag = leave_map
+            elif leave_map in 'v':
+                mode = 'view'
             elif 'q' == leave_map:
                 curses.curs_set(1)
                 break
+            alerts.shift()
+            heads_up_display.display()
+
+        if 'view' == mode:
+            alerts.push("Use movement keys to select a cell on the map. (Shift-move to go 5 squares.)")
+            alerts.shift()
+            # move cursor to its current position
+            leave_map = view_loop()
+            if None == leave_map:
+                pass
+            else:
+                alerts.push("You see %s%s at position %s." % \
+                  (PC.floor.probe(leave_map).indef_article,
+                   PC.floor.probe(leave_map).name,
+                   str(leave_map)))
+            mode = 'mapnav'
             alerts.shift()
             heads_up_display.display()
 
@@ -432,9 +499,13 @@ def runit(stdscr):
                     PC.drop(returned_item)
                 elif 'e' == menu_flag:
                     alerts.push(returned_item.description)
-                #elif 'E' == menu_flag:
-                #    cutscene(returned_item.name, returned_item.longdesc, None, command)
-                    #mode.append('cutscene')
+                elif 'E' == menu_flag:
+                    if None != returned_item.longdesc:
+                        cutscene(returned_item.name, returned_item.longdesc,
+                                 None)
+                    else:
+                        cutscene(returned_item.name, returned_item.description,
+                                 None)
             mode = 'mapnav'
             heads_up_display.display()
             alerts.shift()

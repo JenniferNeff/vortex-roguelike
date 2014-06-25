@@ -100,7 +100,7 @@ class Floor(object):
         self.layer2 = {} # (i,j) : object
         self.layer3 = {}
 
-        self.window = curses.newwin(scr_y-2, scr_x, 1, 0)
+#        self.window = curses.newwin(scr_y-2, scr_x, 1, 0)
         self.maphoriz = 0
         self.mapvert = 2
 
@@ -145,38 +145,38 @@ class Floor(object):
         session.world.append(self)
         self.session = session
 
-    def display(self):
-        """
-        Updates the content of self.window, which is the map's curses window.
-        Updating the actual data in the map happens before this, and drawing
-        the level on the screen happens later.
-        This is a window instead of a pad because the real processing happens
-        in the layerN structures, and windows are easier to pass to panels.
-        """
-        # Draw Layer 1
-        coords = track(self.session.PC)
-        for y in range(scr_y):
-            for x in range(scr_x-1):
-                try:
-                    self.window.addch(y, x,
-                      self.layer1[y+coords[0]][x+coords[1]].symbol)
-                except IndexError:
-                    pass
-#                    self.window.addch(y, x, ord(" "))
-                except curses.error:
-                    pass
-        for item in self.layer2.keys():
-            # add an if statement so things don't get drawn off the map
-            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
-               (item[1] >= coords[1] and item[1] <= coords[3]):
-                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
-                                  self.layer2[item].symbol)
-        for item in self.layer3.keys():
-            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
-               (item[1] >= coords[1] and item[1] <= coords[3]):
-                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
-                                  self.layer3[item].symbol)
-        self.window.noutrefresh()
+#    def display(self):
+#        """
+#        Updates the content of self.window, which is the map's curses window.
+#        Updating the actual data in the map happens before this, and drawing
+#        the level on the screen happens later.
+#        This is a window instead of a pad because the real processing happens
+#        in the layerN structures, and windows are easier to pass to panels.
+#        """
+#        # Draw Layer 1
+#        coords = track(self.session.PC)
+#        for y in range(scr_y):
+#            for x in range(scr_x-1):
+#                try:
+#                    self.window.addch(y, x,
+#                      self.layer1[y+coords[0]][x+coords[1]].symbol)
+#                except IndexError:
+#                    pass
+##                    self.window.addch(y, x, ord(" "))
+#                except curses.error:
+#                    pass
+#        for item in self.layer2.keys():
+#            # add an if statement so things don't get drawn off the map
+#            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
+#               (item[1] >= coords[1] and item[1] <= coords[3]):
+#                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
+#                                  self.layer2[item].symbol)
+#        for item in self.layer3.keys():
+#            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
+#               (item[1] >= coords[1] and item[1] <= coords[3]):
+#                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
+#                                  self.layer3[item].symbol)
+#        self.window.noutrefresh()
 
     def probe(self, coordinates):
         """
@@ -189,11 +189,49 @@ class Floor(object):
         else:
             return self.layer1[coordinates[0]][coordinates[1]]
 
+class MapScreen(object):
+
+    def __init__(self, session):
+        self.window = curses.newwin((scr_y-2), scr_x, 1, 0)
+        self.session = session
+
+    def display(self, floor):
+        """
+        Updates the content of self.window, which is the map's curses window.
+        Data comes from the floor that is passed in.
+        This is a window instead of a pad because the real processing happens
+        in the layerN structures, and windows are easier to pass to panels.
+        """
+        # Draw Layer 1
+        coords = track(self.session.PC)
+        for y in range(scr_y):
+            for x in range(scr_x-1):
+                try:
+                    self.window.addch(y, x,
+                      floor.layer1[y+coords[0]][x+coords[1]].symbol)
+                except IndexError:
+                    pass
+                except curses.error:
+                    pass
+        for item in floor.layer2.keys():
+            # add an if statement so things don't get drawn off the map
+            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
+               (item[1] >= coords[1] and item[1] <= coords[3]):
+                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
+                                  floor.layer2[item].symbol)
+        for item in floor.layer3.keys():
+            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
+               (item[1] >= coords[1] and item[1] <= coords[3]):
+                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
+                                  floor.layer3[item].symbol)
+        self.window.noutrefresh()
+
 class InventoryMenu(object):
 
-    def __init__(self):
+    def __init__(self, session):
         self.window = curses.newwin(scr_y-1, scr_x, 1, 0)
         self.listing = {}
+        self.session = session
 
     def display(self, hoard, query=None): # hoard usually = PC.inventory
         hoard.sort()
@@ -212,19 +250,19 @@ class InventoryMenu(object):
                 self.window.addstr("%s: %s" % (string.ascii_uppercase[i],
                                                hoard[i].name))
                 self.listing[string.ascii_lowercase[i]] = hoard[i]
-                if PC.weapon == hoard[i]:
+                if self.session.PC.weapon == hoard[i]:
                     self.window.addstr(" (Weapon in hand)")
-                elif PC.helm == hoard[i]:
+                elif self.session.PC.helm == hoard[i]:
                     self.window.addstr(" (On head)")
-                elif PC.armor == hoard[i]:
+                elif self.session.PC.armor == hoard[i]:
                     self.window.addstr(" (On body)")
-                elif PC.shoes == hoard[i]:
+                elif self.session.PC.shoes == hoard[i]:
                     self.window.addstr(" (On feet)")
-                elif PC.ring_right == hoard[i]:
+                elif self.session.PC.ring_right == hoard[i]:
                     self.window.addstr(" (On right hand)")
-                elif PC.ring_left == hoard[i]:
+                elif self.session.PC.ring_left == hoard[i]:
                     self.window.addstr(" (On left hand)")
-                elif PC.spellbook == hoard[i]:
+                elif self.session.PC.spellbook == hoard[i]:
                     self.window.addstr(" (Reading)")
                 self.window.move(3+i, 1)
 
@@ -326,13 +364,13 @@ def check_command(win,c):
     else:
         return c
 
-def new_map_loop(session, command=None):
+def new_map_loop(session, map_screen, command=None):
     '''
     Move the player around on the map, and perform simple actions (anything
     that can be accomplished by calling PC.foo(bar) and won't kick the game out
     of map mode). More complex actions are returned back to the main loop.
     '''
-    command = check_command(session.PC.floor.window, command)
+    command = check_command(map_screen.window, command)
     if command in compass.keys():
         session.PC.move(compass[command][0], compass[command][1])
     elif command.lower() in compass.keys():
@@ -350,16 +388,15 @@ def new_map_loop(session, command=None):
                 i.act(session.PC)
         tick(session)
     while session.PC.running:
-        new_map_loop(session, command.lower())
-    session.PC.floor.display()
-    curses.doupdate
+        new_map_loop(session, map_screen, command.lower())
+    map_screen.display(session.PC.floor)
     mode = 'mapnav'
 
-def view_loop(session, command=None):
+def view_loop(session, map_screen, command=None):
     curses.curs_set(2)
     crosshairs = [y_center, x_center]
-    session.PC.floor.window.move(crosshairs[0], crosshairs[1])
-    command = check_command(session.PC.floor.window, command)
+    map_screen.window.move(crosshairs[0], crosshairs[1])
+    command = check_command(map_screen.window, command)
     while "\n" != command and " " != command:
         if command in compass.keys():
             crosshairs = [crosshairs[0]+compass[command][0],
@@ -372,20 +409,20 @@ def view_loop(session, command=None):
         crosshairs[1] = max(crosshairs[1], 0)
         crosshairs[1] = min(crosshairs[1], scr_x-1)
       
-        session.PC.floor.window.move(crosshairs[0], crosshairs[1])
-        command = session.PC.floor.window.getkey()
+        map_screen.window.move(crosshairs[0], crosshairs[1])
+        command = map_screen.window.getkey()
 
     if "\n" == command:
         mode = 'mapnav' # exit view mode
         curses.curs_set(0)
-        session.PC.floor.display()
+        map_screen.display(session.PC.floor)
         curses.doupdate
         return (crosshairs[0]+session.PC.floor.y_offset,
                 crosshairs[1]+session.PC.floor.x_offset)
     elif " " == command:
         mode = 'mapnav' # exit view mode
         curses.curs_set(0)
-        session.PC.floor.display()
+        map_screen.window.display(session.PC.floor)
         curses.doupdate
         return None
 
@@ -479,19 +516,21 @@ def runit(stdscr):
 
     thisgame = title_screen_startup(titlescreen)
     mode = 'mapnav'
-    stdscr.clear()
+#    stdscr.clear()
 
     alerts = AlertQueue(thisgame)
-    invent = InventoryMenu()
+    invent = InventoryMenu(thisgame)
     heads_up_display = HUD(thisgame)
+    map_display = MapScreen(thisgame)
+#    curses.doupdate()
 
-    stdscr.refresh()
+#    stdscr.refresh()
 
     alerts.push("Hello Vanya, welcome to the Dungeons of Doom")
 
     # Initialize the stack of panels.
     # May need to do something else to keep them in order.
-    map_panel = curses.panel.new_panel(thisgame.PC.floor.window)
+    map_panel = curses.panel.new_panel(map_display.window)
     hud_panel = curses.panel.new_panel(heads_up_display.window)
     menu_panel = None
     message_panel = curses.panel.new_panel(alerts.window)
@@ -502,15 +541,18 @@ def runit(stdscr):
     menu_flag = None
 
     # do these when first displaying the map
+    map_display.display(thisgame.PC.floor) # why is it blank at this point?
+    map_panel.top()
     heads_up_display.display()
-    thisgame.PC.floor.display()
     alerts.shift()
-    curses.doupdate()
+    # adding more map loops here just delays drawing
+
+#    curses.doupdate()
 
     while True:
 
         if 'mapnav' == mode:
-            leave_map = new_map_loop(thisgame)
+            leave_map = new_map_loop(thisgame, map_display)
             if None == leave_map:
                 pass
             elif leave_map in 'EIdei':
@@ -533,7 +575,7 @@ def runit(stdscr):
             alerts.push("Use movement keys to select a cell on the map. (Shift-move to go 5 squares.)")
             alerts.shift()
             # move cursor to its current position
-            leave_map = view_loop(thisgame)
+            leave_map = view_loop(thisgame, map_display)
             if None == leave_map:
                 pass
             else:

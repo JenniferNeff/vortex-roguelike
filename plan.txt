@@ -185,5 +185,7 @@ Cold Pizza - Filling food.
 Gyro - Filling, healthy.
 Trail Mix - Filling.
 
+Chocolate Covered Espresso Beans - caffeinated, but not a beverage.
+
 Sandwiches:
 Meatball Sub - Filling.

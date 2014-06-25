@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import objects
-import curses, traceback, string
+import curses, traceback, string, pickle, sys
 import curses.panel
 
 # These are dummy values.
@@ -13,16 +13,27 @@ y_center = scr_y / 2
 
 # Dummy values. These will be loaded from a file later, to better support
 # saving and loading partially-completed games.
-PC = objects.Player()
-PC_position = (5,5) # 86, 11 to test
-HUD_list = []
+#PC = objects.Player()
+PC_position = (5,5) # 86, 11 to test - this is the player's starting position
+#all_levels = []
 
-# Global values for tracking where the map window is.
-# Allows the player to select cells visually from the display.
-# perhaps change this so that the floor itself remembers, to not use globals?
 
-x_offset = 0
-y_offset = 0
+class Session(object):
+
+    def __init__(self, name):
+        self.name = "%s.vor" % name
+        self.PC = objects.Player()
+        self.world = []
+
+    def save_game(self):
+        output = open(self.name, 'w')
+        pickle.dump(self, output)
+        output.close()
+
+#    def load_game(load):
+#        input_file = pickle.load(open(load, 'r'))
+#        self.PC = input_file.PC
+#        self.world = input_file.world
 
 # Basic movement keys; same as in Rogue
 compass = {
@@ -36,28 +47,28 @@ compass = {
 "n": (1,1)
 }
 
-def tick():
-    for i in PC.floor.layer2.values():
+def tick(session):
+    for i in session.PC.floor.layer2.values():
         i.initiative -= 1
-    for i in PC.floor.layer3.values():
+    for i in session.PC.floor.layer3.values():
         i.initiative -= 1
 
 
-def track(limit_y, limit_x): # arguments are the size of the map
+def track(target):
     '''
     Figure out a reasonable slice of the map to display such that the PC
     remains in the center of the screen, but the display never slips off
     the edges of the map.
     '''
-    upperleft_x = PC.location[1] - x_center
-    upperleft_y = PC.location[0] - y_center
+    upperleft_x = target.location[1] - x_center
+    upperleft_y = target.location[0] - y_center
     lowerright_x = upperleft_x + (scr_x-1)
     lowerright_y = upperleft_y + (scr_y-1)
 
-    while lowerright_x > limit_x:
+    while lowerright_x > target.floor.maphoriz:
         upperleft_x -= 1
         lowerright_x -= 1
-    while lowerright_y > limit_y:
+    while lowerright_y > target.floor.mapvert:
         upperleft_y -= 1
         lowerright_y -= 1
     while 0 > upperleft_x:
@@ -71,11 +82,8 @@ def track(limit_y, limit_x): # arguments are the size of the map
     #print (limit_y, limit_x)
     #print (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
 
-    # set the globals
-    global x_offset
-    global y_offset
-    x_offset = upperleft_x
-    y_offset = upperleft_y
+    target.floor.x_offset = upperleft_x
+    target.floor.y_offset = upperleft_y
 
     return (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
 
@@ -93,7 +101,10 @@ class Floor(object):
         self.maphoriz = 0
         self.mapvert = 2
 
-    def load_map(self, mapfile):
+        self.x_offset = 0
+        self.y_offset = 0
+
+    def load_map(self, mapfile, session):
         '''
         Build layer 1 of a map from a text file. A border of void is added to
         each side; this prevents errors when fleeing monsters reach the edge.
@@ -128,6 +139,9 @@ class Floor(object):
             while len(line) < self.maphoriz:
                 line.append(objects.make_void())
 
+        session.world.append(self)
+        self.session = session
+
     def display(self):
         """
         Updates the content of self.window, which is the map's curses window.
@@ -137,7 +151,7 @@ class Floor(object):
         in the layerN structures, and windows are easier to pass to panels.
         """
         # Draw Layer 1
-        coords = track(self.mapvert, self.maphoriz)
+        coords = track(self.session.PC)
         for y in range(scr_y):
             for x in range(scr_x-1):
                 try:
@@ -248,9 +262,10 @@ class Dialogue(object):
 class AlertQueue(object):
     # implement as a collection.deque later?
 
-    def __init__(self):
+    def __init__(self, session):
         self.messages = []
         self.window = curses.newwin(1, scr_x, 0, 0)
+        self.session = session
 
     def push(self, message):
         self.messages.append(message)
@@ -260,7 +275,7 @@ class AlertQueue(object):
         objects.shouts = []
         try:
             message_to_show = self.messages.pop(0)
-            PC.running = False # kick the player out of running upon news
+            self.session.PC.running = False # kick the player out of running upon news
         except IndexError:
             message_to_show = ""
         if self.messages != []:
@@ -280,13 +295,27 @@ class AlertQueue(object):
 
 class HUD(object):
 
-    def __init__(self):
+    def __init__(self, session):
         self.window = curses.newwin(1, scr_x, scr_y-1, 0)
         self.frame = "Level: {0.level}   HP: {0.hp}   Mana: {0.mana}"
+        self.session = session
 
     def display(self):
-        self.window.addstr(0,0, self.frame.format(PC))
+        self.window.addstr(0,0, self.frame.format(self.session.PC))
         self.window.noutrefresh()
+
+class Titlescreen(object):
+
+    def __init__(self):
+        self.window = curses.newwin(scr_y, scr_x, 0, 0)
+
+    def display(self):
+        splash = open("titlescreen.vortex", 'r')
+        try:
+            self.window.addstr(0,0, splash.read())
+        except curses.error:
+            pass
+        splash.close()
 
 def check_command(win,c):
     if None == c:
@@ -294,42 +323,40 @@ def check_command(win,c):
     else:
         return c
 
-def new_map_loop(command=None):
+def new_map_loop(session, command=None):
     '''
     Move the player around on the map, and perform simple actions (anything
     that can be accomplished by calling PC.foo(bar) and won't kick the game out
     of map mode). More complex actions are returned back to the main loop.
     '''
-    command = check_command(PC.floor.window, command)
+    command = check_command(session.PC.floor.window, command)
     if command in compass.keys():
-        PC.move(compass[command][0], compass[command][1])
+        session.PC.move(compass[command][0], compass[command][1])
     elif command.lower() in compass.keys():
-        PC.move(compass[command.lower()][0], compass[command.lower()][1])
-        PC.running = True
+        session.PC.move(compass[command.lower()][0], compass[command.lower()][1])
+        session.PC.running = True
     elif "t" == command:
-        PC.take()
+        session.PC.take()
     elif "." == command:
-        PC.rest()
+        session.PC.rest()
     else:
         return command
-    while 0 < PC.initiative:
-        for i in PC.floor.layer3.values():
+    while 0 < session.PC.initiative:
+        for i in session.PC.floor.layer3.values():
             if 0 == i.initiative:
-                i.act(PC)
-        for j in HUD_list:
-            j.display()
-        tick()
-    while PC.running:
-        new_map_loop(command.lower())
-    PC.floor.display()
+                i.act(session.PC)
+        tick(session)
+    while session.PC.running:
+        new_map_loop(session, command.lower())
+    session.PC.floor.display()
     curses.doupdate
     mode = 'mapnav'
 
-def view_loop(command=None):
+def view_loop(session, command=None):
     curses.curs_set(2)
     crosshairs = [y_center, x_center]
-    PC.floor.window.move(crosshairs[0], crosshairs[1])
-    command = check_command(PC.floor.window, command)
+    session.PC.floor.window.move(crosshairs[0], crosshairs[1])
+    command = check_command(session.PC.floor.window, command)
     while "\n" != command and " " != command:
         if command in compass.keys():
             crosshairs = [crosshairs[0]+compass[command][0],
@@ -342,23 +369,24 @@ def view_loop(command=None):
         crosshairs[1] = max(crosshairs[1], 0)
         crosshairs[1] = min(crosshairs[1], scr_x-1)
       
-        PC.floor.window.move(crosshairs[0], crosshairs[1])
-        command = PC.floor.window.getkey()
+        session.PC.floor.window.move(crosshairs[0], crosshairs[1])
+        command = session.PC.floor.window.getkey()
 
     if "\n" == command:
         mode = 'mapnav' # exit view mode
         curses.curs_set(0)
-        PC.floor.display()
+        session.PC.floor.display()
         curses.doupdate
-        return (crosshairs[0]+y_offset, crosshairs[1]+x_offset)
+        return (crosshairs[0]+session.PC.floor.y_offset,
+                crosshairs[1]+session.PC.floor.x_offset)
     elif " " == command:
         mode = 'mapnav' # exit view mode
         curses.curs_set(0)
-        PC.floor.display()
+        session.PC.floor.display()
         curses.doupdate
         return None
 
-def new_inventory_loop(hoard, inv, command):
+def new_inventory_loop(session, hoard, inv, command):
     if 'i' == command:
         query = "You are carrying:"
     elif 'I' == command:
@@ -369,7 +397,7 @@ def new_inventory_loop(hoard, inv, command):
         query = "Which item would you like to examine?"
     elif 'E' == command:
         query = "Which item would you like to Examine Closely?"
-    hoard.display(PC.inventory, query)
+    hoard.display(session.PC.inventory, query)
     inv.top()
     inv.show()
     curses.panel.update_panels()
@@ -401,6 +429,37 @@ def cutscene(title, content, options, command=None):
     cutscene_panel.top()
     cutscene_panel.show()
 
+def title_screen_startup(title):
+    title.display()
+    curses.panel.update_panels()
+    #curses.doupdate()
+    command = None
+    while True:
+        curses.doupdate()
+        if "1" == command: # new game
+            session = Session("awesome")
+            test = Floor(name="Testing Map")
+            test.load_map("testmap2", session)
+
+            session.PC.floor = test
+            session.PC.location = PC_position
+            test.layer3[session.PC.location] = session.PC
+            testitem = objects.Item(floor=session.PC.floor, location=(6,10))
+            testmonster = objects.Monster(floor=session.PC.floor,
+                                          location=(7,11))
+            return session
+        if "2" == command: # load game
+            session = pickle.load(open("awesome.vor", 'r'))
+            return session
+        if "3" == command: # help
+            break
+        if "4" == command: # quit
+            sys.exit()
+        command = title.window.getkey()
+
+# The wisdom you need is here:
+# http://python.about.com/od/pythonstandardlibrary/a/pickle_intro.htm
+
 # Modes are:
 # title : title screen? Maybe just make this a cutscene
 # mapnav : map navigation
@@ -408,37 +467,28 @@ def cutscene(title, content, options, command=None):
 # cutscene : view a screen with title, text, and a few options
 # view : move a cursor around the map
 
-mode = 'title'
 
 def runit(stdscr):
+
+    # Initialize title screen.
+    titlescreen = Titlescreen()
+    title_panel = curses.panel.new_panel(titlescreen.window)
+
+    thisgame = title_screen_startup(titlescreen)
+    mode = 'mapnav'
     stdscr.clear()
 
-    alerts = AlertQueue()
+    alerts = AlertQueue(thisgame)
     invent = InventoryMenu()
-    heads_up_display = HUD()
+    heads_up_display = HUD(thisgame)
 
     stdscr.refresh()
-
-    test = Floor(name="Testing Map")
-    test.load_map("testmap2")
-
-    PC.floor = test
-    PC.location = PC_position
-    test.layer3[PC.location] = PC
-
-    testitem = objects.Item(floor=test, location=(6,10))
-    testmonster = objects.Monster(floor=test, location=(7,11))
-    #test.layer2[testitem.location] = testitem
-
-    test.display()
-
-    mode = 'mapnav'
 
     alerts.push("Hello Vanya, welcome to the Dungeons of Doom")
 
     # Initialize the stack of panels.
     # May need to do something else to keep them in order.
-    map_panel = curses.panel.new_panel(test.window)
+    map_panel = curses.panel.new_panel(thisgame.PC.floor.window)
     hud_panel = curses.panel.new_panel(heads_up_display.window)
     menu_panel = None
     message_panel = curses.panel.new_panel(alerts.window)
@@ -450,17 +500,18 @@ def runit(stdscr):
 
     # do these when first displaying the map
     heads_up_display.display()
+    thisgame.PC.floor.display()
     alerts.shift()
     curses.doupdate()
 
     while True:
 
         if 'mapnav' == mode:
-            leave_map = new_map_loop()
+            leave_map = new_map_loop(thisgame)
             if None == leave_map:
                 pass
             elif leave_map in 'EIdei':
-                if [] == PC.inventory:
+                if [] == thisgame.PC.inventory:
                     alerts.push("You're not carrying anything.")
                 else:
                     mode = 'inventory'
@@ -468,8 +519,10 @@ def runit(stdscr):
             elif leave_map in 'v':
                 mode = 'view'
             elif 'q' == leave_map:
-                curses.curs_set(1)
-                break
+                sys.exit()
+            elif 's' == leave_map:
+                thisgame.save_game()
+                alerts.push("Game saved.")
             alerts.shift()
             heads_up_display.display()
 
@@ -477,13 +530,13 @@ def runit(stdscr):
             alerts.push("Use movement keys to select a cell on the map. (Shift-move to go 5 squares.)")
             alerts.shift()
             # move cursor to its current position
-            leave_map = view_loop()
+            leave_map = view_loop(thisgame)
             if None == leave_map:
                 pass
             else:
                 alerts.push("You see %s%s at position %s." % \
-                  (PC.floor.probe(leave_map).indef_article,
-                   PC.floor.probe(leave_map).name,
+                  (thisgame.PC.floor.probe(leave_map).indef_article,
+                   thisgame.PC.floor.probe(leave_map).name,
                    str(leave_map)))
             mode = 'mapnav'
             alerts.shift()
@@ -491,10 +544,11 @@ def runit(stdscr):
 
         elif 'inventory' == mode:
             alerts.window.clear()
-            returned_item = new_inventory_loop(invent, inventory_panel, menu_flag)
+            returned_item = new_inventory_loop(thisgame, invent,
+                                               inventory_panel, menu_flag)
             if None != returned_item: # Move this into inventory function
                 if "I" == menu_flag:
-                    returned_item.use(user=PC)
+                    returned_item.use(user=thisgame.PC)
                 elif "d" == menu_flag:
                     PC.drop(returned_item)
                 elif 'e' == menu_flag:
@@ -510,5 +564,17 @@ def runit(stdscr):
             heads_up_display.display()
             alerts.shift()
             curses.doupdate
+
+        elif 'title' == mode:
+            title_panel.top()
+            title_panel.show()
+            title_screen_startup(titlescreen, thisgame)
+
+            title_panel.hide()
+            mode = 'mapnav'
+            heads_up_display.display()
+            alerts.shift()
+            curses.doupdate
+
 
 curses.wrapper(runit)

@@ -13,9 +13,12 @@ y_center = scr_y / 2
 
 # Dummy values. These will be loaded from a file later, to better support
 # saving and loading partially-completed games.
-#PC = objects.Player()
 PC_position = (5,5) # 86, 11 to test - this is the player's starting position
-#all_levels = []
+
+# 4 calls to [session].PC.floor.display()
+# These need to go the other way so that the window graps that map data
+# the map data can't hand itself to the window; windows can't be pickled
+# which means I can't save the game properly.
 
 
 class Session(object):

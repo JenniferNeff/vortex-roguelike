@@ -15,28 +15,19 @@ y_center = scr_y / 2
 # saving and loading partially-completed games.
 PC_position = (5,5) # 86, 11 to test - this is the player's starting position
 
-# 4 calls to [session].PC.floor.display()
-# These need to go the other way so that the window graps that map data
-# the map data can't hand itself to the window; windows can't be pickled
-# which means I can't save the game properly.
-
-
 class Session(object):
 
     def __init__(self, name):
-        self.name = "%s.vor" % name
+        self.name = name
         self.PC = objects.Player()
         self.world = []
 
-    def save_game(self):
-        output = open(self.name, 'w')
-        pickle.dump(self, output)
-        output.close()
-
-#    def load_game(load):
-#        input_file = pickle.load(open(load, 'r'))
-#        self.PC = input_file.PC
-#        self.world = input_file.world
+    def save_game(self, savename=""):
+        if "" != savename:
+            self.name = savename
+            output = open(self.name, 'w')
+            pickle.dump(self, output)
+            output.close()
 
 # Basic movement keys; same as in Rogue
 compass = {
@@ -100,7 +91,6 @@ class Floor(object):
         self.layer2 = {} # (i,j) : object
         self.layer3 = {}
 
-#        self.window = curses.newwin(scr_y-2, scr_x, 1, 0)
         self.maphoriz = 0
         self.mapvert = 2
 
@@ -144,39 +134,6 @@ class Floor(object):
 
         session.world.append(self)
         self.session = session
-
-#    def display(self):
-#        """
-#        Updates the content of self.window, which is the map's curses window.
-#        Updating the actual data in the map happens before this, and drawing
-#        the level on the screen happens later.
-#        This is a window instead of a pad because the real processing happens
-#        in the layerN structures, and windows are easier to pass to panels.
-#        """
-#        # Draw Layer 1
-#        coords = track(self.session.PC)
-#        for y in range(scr_y):
-#            for x in range(scr_x-1):
-#                try:
-#                    self.window.addch(y, x,
-#                      self.layer1[y+coords[0]][x+coords[1]].symbol)
-#                except IndexError:
-#                    pass
-##                    self.window.addch(y, x, ord(" "))
-#                except curses.error:
-#                    pass
-#        for item in self.layer2.keys():
-#            # add an if statement so things don't get drawn off the map
-#            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
-#               (item[1] >= coords[1] and item[1] <= coords[3]):
-#                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
-#                                  self.layer2[item].symbol)
-#        for item in self.layer3.keys():
-#            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
-#               (item[1] >= coords[1] and item[1] <= coords[3]):
-#                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
-#                                  self.layer3[item].symbol)
-#        self.window.noutrefresh()
 
     def probe(self, coordinates):
         """
@@ -330,6 +287,17 @@ class AlertQueue(object):
             if " " == scroll:
                 self.shift()
 
+    def ask_player(self, query):
+        self.window.clear()
+        self.window.addstr(0,0, query)
+        self.window.addstr(" ")
+        curses.echo()
+        curses.curs_set(1)
+        response = self.window.getstr()
+        curses.curs_set(0)
+        curses.noecho()
+        return response
+
     def vent(self):
         while self.messages != []:
             self.shift()
@@ -413,14 +381,14 @@ def view_loop(session, map_screen, command=None):
         command = map_screen.window.getkey()
 
     if "\n" == command:
-        mode = 'mapnav' # exit view mode
+        mode = 'mapnav'
         curses.curs_set(0)
         map_screen.display(session.PC.floor)
         curses.doupdate
         return (crosshairs[0]+session.PC.floor.y_offset,
                 crosshairs[1]+session.PC.floor.x_offset)
     elif " " == command:
-        mode = 'mapnav' # exit view mode
+        mode = 'mapnav'
         curses.curs_set(0)
         map_screen.window.display(session.PC.floor)
         curses.doupdate
@@ -465,16 +433,14 @@ def cutscene(title, content, options, command=None):
     cutscene_panel = curses.panel.new_panel(cut.window)
     cut.display()
     curses.panel.update_panels()
-    #curses.doupdate()
     cutscene_panel.top()
     cutscene_panel.show()
 
 def title_screen_startup(title):
-    title.display()
-    curses.panel.update_panels()
-    #curses.doupdate()
     command = None
     while True:
+        title.display()
+        curses.panel.update_panels()
         curses.doupdate()
         if "1" == command: # new game
             session = Session("awesome")
@@ -489,16 +455,24 @@ def title_screen_startup(title):
                                           location=(7,11))
             return session
         if "2" == command: # load game
-            session = pickle.load(open("awesome.vor", 'r'))
-            return session
+            title.window.addstr(18,29, "File to load: ")
+            curses.echo()
+            curses.curs_set(1)
+            response = title.window.getstr()
+            curses.curs_set(0)
+            curses.noecho()
+            try:
+                session = pickle.load(open(response, 'r'))
+                return session
+            except:
+                title.display()
+                curses.panel.update_panels()
+                title.window.addstr(18,29, "Couldn't load requested file.")
         if "3" == command: # help
             break
         if "4" == command: # quit
             sys.exit()
         command = title.window.getkey()
-
-# The wisdom you need is here:
-# http://python.about.com/od/pythonstandardlibrary/a/pickle_intro.htm
 
 # Modes are:
 # title : title screen? Maybe just make this a cutscene
@@ -566,8 +540,9 @@ def runit(stdscr):
             elif 'q' == leave_map:
                 sys.exit()
             elif 's' == leave_map:
-                thisgame.save_game()
-                alerts.push("Game saved.")
+                newname = alerts.ask_player("Save game as (leave blank to overwrite):")
+                thisgame.save_game(savename=newname)
+                alerts.push("Game saved as %s." % thisgame.name)
             alerts.shift()
             heads_up_display.display()
 

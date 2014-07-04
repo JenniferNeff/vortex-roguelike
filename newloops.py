@@ -221,7 +221,7 @@ class InventoryMenu(object):
                     self.window.addstr(" (On left hand)")
                 elif self.session.PC.spellbook == hoard[i]:
                     self.window.addstr(" (Reading)")
-                self.window.move(3+i, 1)
+                self.window.move(4+i, 1)
 
         self.window.addstr(20,0, "Press space to exit this screen")
         self.window.noutrefresh()

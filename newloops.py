@@ -312,6 +312,7 @@ class HUD(object):
     def display(self):
         self.window.addstr(0,0, self.frame.format(self.session.PC))
         self.window.noutrefresh()
+        curses.doupdate() # lest HP counters update too late
 
 class Titlescreen(object):
 

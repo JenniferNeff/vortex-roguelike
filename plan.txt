@@ -1,10 +1,5 @@
 Checklist:
 
-- Cutscenes
- - Dialogue choices in cutscenes
-- Ability to look at items and monsters
-
-
 Every object has:
  - a name
  - a symbol: @ # ! o
@@ -166,6 +161,18 @@ Chess pieces
 
 Move just like their namesakes. Pawns always begin adjacent to a wall, walk to the other side, and self-promote. If you corner the king he will surrender, and trigger some interesting event.
 
+Conwayans
+
+Oozes that breed according to the Game of Life. One move by the player always equals one of their ticks. The player is damaged whenever a conwayan tries to breed on the space where the player is standing. (This breeding attempt fails; therefore the player's presence disrupts the pattern.)
+
+ - The conwayans on a particular floor are driven by an invisible entity that tracks the player's speed and calculates the next arrangement for any given turn. Whenever the player moves, this appeals to the Life Engine, which does the following:
+  -- Locate all conwayans present on the level
+      (if none, the Engine self-destructs to conserve resources)
+  -- Locate all eligible neighbor-cells of existing conwayans
+  -- For all aforementioned cells, decide if it lives or dies
+  -- Enact the change
+      Every conwayan is born with the average (mean? median?) of its parents' hit points. Conwayans heal gradually for every tick they remain alive. Thus the whole mass is injured as if a larger organism. Stronger variants heal instantaneously, so that careful heavy strikes that disrupt patterns are the only way to kill them.
+
 Food and Drinks:
 
 Player's hunger meter runs from 0 to 2000 (a reference to the average human's calorie needs of approximately 2000 calories per day; allows real calorie amounts to be used for foods).
@@ -189,3 +196,18 @@ Chocolate Covered Espresso Beans - caffeinated, but not a beverage.
 
 Sandwiches:
 Meatball Sub - Filling.
+
+Combat mechanics:
+
+Each entity has a "pool" for attack and defense.
+
+When A attacks B:
+ 1. A rolls attack, B rolls defense.
+ 2. If A rolls higher the attack hits; otherwise it misses.
+      Add later: if A rolls higher than B's entire pool, it's a crit
+ 3. Melee damage = base damage + gear bonuses
+
+Need shouts for:
+ - Hit with a melee attack
+ - Miss with a melee attack
+ - 

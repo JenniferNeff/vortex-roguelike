@@ -288,6 +288,12 @@ class Player(Entity):
             self.hp += 1
         self.act()
 
+    def wield_or_wear(self, item):
+        if isInstance(item, Weapon):
+            self.weapon = item
+        else:
+            shouts.append("That's not an equippable item.")
+
     def perish(self, murderer=None):
         shouts.append("Player has died! Resetting HP for ease in testing!")
         self.hp = 50

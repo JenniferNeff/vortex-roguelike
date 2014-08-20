@@ -446,14 +446,15 @@ class Spellbook(Item):
 class Monster(Entity):
 
     def __init__(self, **kwargs):
-        Entity.__init__(self, layer=3, symbol="Z", #placeholder
-          traversible=False, name="Demo Zombie",
+        Entity.__init__(self, layer=3, #symbol="Z", #placeholder
+          traversible=False, #name="Demo Zombie",
           can_be_taken=False,
-          hp=20, attacks={'unarmed':3},
-          speed=80, accuracy=50,
-          defense={'melee':30},
-          description="Your basic shambling zombie. \"Brains!\"",
-          inventory=[], **kwargs)
+          #hp=20, attacks={'unarmed':3},
+          #speed=80, accuracy=50,
+          #defense={'melee':30},
+          #description="Your basic shambling zombie. \"Brains!\"",
+          #inventory=[],
+          **kwargs)
 
     def move(self, y, x):
         source = self.location

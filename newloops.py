@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import objects
+import objects, monsters
 import curses, traceback, string, pickle, sys
 import curses.panel
 import unittest
@@ -451,8 +451,7 @@ def title_screen_startup(title):
             testweapon = objects.Item(floor=session.PC.floor, location=(4,16),
                                       equip_slot='melee weapon',
                                       name="Basic Sword", symbol='/')
-            testmonster = objects.Monster(floor=session.PC.floor,
-                                          location=(7,11))
+            testmonster = monsters.Zombie(flr=session.PC.floor, loc=(7,11))
             return session
         if "2" == command: # load game
             title.window.addstr(18,29, "File to load: ")

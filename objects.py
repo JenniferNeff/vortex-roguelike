@@ -10,7 +10,7 @@
 # 6: cyan
 # 7: white
 
-import random
+import random, math
 
 # def_article: "the " for most things. "" for uniques with proper names.
 # indef_article: "a " or "an " for most things, "the" for uniques
@@ -42,6 +42,9 @@ def strike_notifs(sub, obj):
 
     return smartcaps(reply)
 
+def report(sentence):
+    shouts.append(smartcaps(sentence))
+
 class Entity(object):
 
     def __init__(self, name="Unknown entity", symbol=None, color=7,
@@ -53,8 +56,22 @@ class Entity(object):
                  hp_max=None, mana_max=None, hp=None, mana=None, defense={},
                  attacks={}, speed=60, accuracy=100,
                  layer=2, floor=None, location=None,
-                 inventory=[]
+                 inventory=[],
+                 **kwargs
                  ):
+        self.stats = {"level": level,
+                      "XP": xp,
+                      "max HP": hp_max,
+                      "max mana": mana_max,
+                      "speed": speed,
+                      "accuracy": accuracy}
+
+        self.adjusted_stats = {"level": level,
+                               "XP": xp,
+                               "max HP": hp_max,
+                               "max mana": mana_max,
+                               "speed": speed,
+                               "accuracy": accuracy}
         self.name = name
         self.symbol = symbol
         self.color = color
@@ -62,20 +79,20 @@ class Entity(object):
         self.longdesc = longdesc
         self.def_article = def_article
         self.indef_article = indef_article
-        self.xp = xp
-        self.level = level
+        self.xp = xp # deprecating
+        self.level = level # deprecating
         self.alignment = alignment
         self.opaque = opaque
         self.traversible = traversible
         self.can_be_taken = can_be_taken
         self.hp = hp
         self.mana = mana
-        self.hp_max = hp_max
-        self.mana_max = mana_max
+        self.hp_max = hp_max # deprecating
+        self.mana_max = mana_max # deprecating
         self.defense = defense
         self.attacks = attacks
-        self.speed = speed
-        self.accuracy = accuracy
+        self.speed = speed # deprecating
+        self.accuracy = accuracy # deprecating
         self.initiative = 0
         self.layer = layer
         self.floor = floor
@@ -90,8 +107,13 @@ class Entity(object):
     def __str__(self):
         return self.symbol # there might be some better use for this
 
+    def calc_stats(self):
+        self.hp = min(self.hp, self.adjusted_stats["max HP"])
+        self.mana = min(self.mana, self.adjusted_stats["max mana"])
+
     def act(self): # all actions that "take one action" call this
         self.initiative += self.speed
+        self.calc_stats()
 
     # "Is it possible to step onto the space I want to step on?"
     def traverse_test(self,y,x):
@@ -171,7 +193,7 @@ class Entity(object):
             if None == implement:
                 damage_roll = random.randint(1, self.attacks['unarmed'])
             else:
-                shouts.append("Attacked with weapon. Fix this!")
+                report("Attacked with weapon. Fix this!")
                 damage_roll = 0
                 # seriously, fix it
             target.hp -= damage_roll
@@ -179,16 +201,29 @@ class Entity(object):
                 target.perish(murderer=self)
         else:
             if isinstance(target, Player):
-                shouts.append(random.choice(
+                report(random.choice(
                   ("{Adef}{Aname} misses you.",
                    "{Adef}{Aname} swings and misses you.")
-                  ).format(Adef=self.def_article.capitalize(), Aname=self.name))
+                  ).format(Adef=self.def_article, Aname=self.name))
             else:
-                shouts.append(random.choice(
+                report(random.choice(
                   ("{Adef}{Aname} misses {Bdef}{Bname}.",
                    "{Adef}{Aname} swings and misses {Bdef}{Bname}.")
-                  ).format(Adef=self.def_article.capitalize(), Aname=self.name,
+                  ).format(Adef=self.def_article, Aname=self.name,
                            Bdef=target.def_article, Bname=target.name))
+
+    def level_up(self):
+        if isinstance(self.level, int) and isinstance(self.hp_max, int):
+            self.stats['level'] += 1
+            hp_ratio = float(self.hp) / float(self.adjusted_stats['max HP'])
+            # This is the leveling HP curve.
+            self.stats['max HP'] += random.randint(10,20)
+            self.calc_stats()
+            self.hp = int(math.floor(self.adjusted_stats['max HP'] * hp_ratio))
+            if isinstance(self, Player):
+                report("You have gained a level!")
+            else:
+                report("{0.def_article}{0.name} has gained a level!".format(self))
 
 class Player(Entity):
 
@@ -196,15 +231,17 @@ class Player(Entity):
                  **kwargs):
         Entity.__init__(self, symbol="@", level=1, traversible=False,
                         hp_max=50, mana_max=50, hp=50, mana=50, accuracy=80,
-                        defense={'melee':80}, attacks={'unarmed':5}
+                        defense={'melee':80},
+                        attacks={'unarmed':5,
+                                 'melee':8}
                         )
-        self.weapon = None
-        self.helm = None
-        self.armor = None
-        self.shoes = None
-        self.ring_right = None
-        self.ring_left = None
-        self.spellbook = None
+        self.equipped = {'melee weapon': None,
+                         'helm': None,
+                         'armor': None,
+                         'shoes': None,
+                         'right ring': None,
+                         'left ring': None,
+                         'spellbook': None}
 
         self.hunger = 0
         self.thirst = 0
@@ -212,6 +249,20 @@ class Player(Entity):
         self.running = False
 
         self.skills = {}
+
+    def calc_stats(self):
+        for i in self.stats.keys():
+            self.adjusted_stats[i] = self.stats[i]
+        try:
+            for i in self.equipped.values():
+                for j in i.stats.keys():
+                    self.adjusted_stats[j] += i.stats[j]
+        except AttributeError:
+            pass
+        # Add other temporary inflictions; monsters will do this too.
+        # If anything should have a max/min value, that goes here.
+        self.hp = min(self.hp, self.adjusted_stats["max HP"])
+        self.mana = min(self.mana, self.adjusted_stats["max mana"])
 
     def move(self, y, x):
         source = self.location
@@ -221,9 +272,10 @@ class Player(Entity):
         # "are you sure you want to walk on this?" questions.
         if dest in self.floor.layer3.keys():
             self.floor.layer3[dest].walkon(self)
-        if dest in self.floor.layer2.keys():
+        elif dest in self.floor.layer2.keys():
             self.floor.layer2[dest].walkon(self)
-        self.floor.layer1[dest[0]][dest[1]].walkon(self)
+        else:
+            self.floor.layer1[dest[0]][dest[1]].walkon(self)
 
         if trav:
             self.location = dest
@@ -239,25 +291,31 @@ class Player(Entity):
             self.running = False #doesn't stop player from attacking
 
     def attack(self, aim, implement=None):
+        if None == implement:
+            implement = self.equipped["melee weapon"]
+
         target = self.floor.layer3[aim]
-        attack_roll = random.randint(0,self.accuracy)
+        attack_roll = random.randint(0,self.adjusted_stats['accuracy'])
         defense_roll = random.randint(0,target.defense.setdefault('melee',0))
         if attack_roll > defense_roll:
-            shouts.append(random.choice(
+            report(random.choice(
               ("You score a hit against {Bdef}{Bname}.",
                "You strike {Bdef}{Bname}.")
               ).format(Bdef=target.def_article, Bname=target.name))
             if None == implement:
                 damage_roll = random.randint(1, self.attacks['unarmed'])
+            elif self.equipped['melee weapon'] == implement:
+                damage_roll = random.randint(1, self.attacks['melee'])
+                # add modifier for weapon
             else:
-                shouts.append("Attacked with weapon. Fix this!")
+                report("This attack type not defined. Fix this!")
                 damage_roll = 0
                 # seriously, fix it
             target.hp -= damage_roll
             if 0 >= target.hp:
                 target.perish(murderer=self)
         else:
-            shouts.append(random.choice(
+            report(random.choice(
               ("You miss {Bdef}{Bname}.",
                "You swing and miss {Bdef}{Bname}.")
               ).format(Bdef=target.def_article, Bname=target.name))
@@ -265,9 +323,9 @@ class Player(Entity):
 
     def take(self):
         if self.location not in self.floor.layer2.keys():
-            shouts.append("There's nothing here to take.")
+            report("There's nothing here to take.")
         else:
-            shouts.append("You pick up a %s." % \
+            report("You pick up a %s." % \
               self.floor.layer2[self.location].name)
             self.floor.layer2[self.location].when_taken()
             self.inventory.append(self.floor.layer2.pop(self.location))
@@ -275,9 +333,9 @@ class Player(Entity):
 
     def drop(self, item):
         if self.location in self.floor.layer2.keys():
-            shouts.append("There's already something on the floor.")
+            report("There's already something on the floor.")
         else:
-            shouts.append("You drop the %s." % item.name)
+            report("You drop the %s." % item.name)
             self.floor.layer2[self.location] = item
             self.inventory.remove(item)
             item.when_dropped()
@@ -289,13 +347,18 @@ class Player(Entity):
         self.act()
 
     def wield_or_wear(self, item):
-        if isInstance(item, Weapon):
-            self.weapon = item
-        else:
-            shouts.append("That's not an equippable item.")
+        if item.when_equipped(self):
+            self.equipped[item.equip_slot] = item
+            self.act()
+
+    def remove(self, item):
+        if item.when_removed(self):
+            self.equipped[item.equip_slot] = None
+            self.act()
+            report(str(self.equipped[item.equip_slot])) # testing
 
     def perish(self, murderer=None):
-        shouts.append("Player has died! Resetting HP for ease in testing!")
+        report("Player has died! Resetting HP for ease in testing!")
         self.hp = 50
 
 sampledescription = """
@@ -306,23 +369,33 @@ It has infinite charges, so try Invoking it.
 
 class Item(Entity):
 
-    def __init__(self, **kwargs):
-        Entity.__init__(self, layer=2, symbol="$", # placeholder
-          traversible=True, name="Nondescript Item",
-          can_be_taken=True,
+    def __init__(self, equip_slot=None, cursed=False, **kwargs):
+        Entity.__init__(self, layer=2, # placeholder
+          traversible=True, can_be_taken=True,
           description="Short description of a nondescript item.",
           longdesc=sampledescription,
           **kwargs)
           # how to pass in more arguments properly??
+        self.equip_slot = equip_slot
+        self.cursed = cursed
+        try:
+            if -1 == self.equip_slot.find("weapon"):
+                self.equip_action = "wear"
+            else:
+                self.equip_action = "wield"
+        except AttributeError:
+            self.equip_action = "wear"
 
     def walkon(self, stomper):
-        if isinstance(stomper, Player) and (stomper.location == self.location):
-            shouts.append("You are standing on a %s" % self.name)
+        if isinstance(stomper, Player):
+            report("You are standing on {obj.indef_article}{obj.name}.".format(obj=self))
             stomper.running = False
 
     def use(self, user):
-        shouts.append("You invoke the %s and gain a level!" % self.name)
-        user.level += 1
+        user.level_up()
+
+    # The when_*() functions return False when that action fails, and True
+    # when it succeeds. They should also contain all related reports.
 
     def when_taken(self):
         pass
@@ -330,8 +403,39 @@ class Item(Entity):
     def when_dropped(self):
         pass
 
-class Weapon(Item):
-    pass
+    def when_equipped(self, user):
+        if None == self.equip_slot:
+            report("You can't {obj.equip_action} that.".format(obj=self))
+            return False
+        elif user.equipped[self.equip_slot] != None:
+            report("You're already {obj.equip_action}ing a {thing}.".format(obj=self, thing=user.equipped[self.equip_slot].name))
+            return False
+        else:
+            report("You {obj.equip_action} {obj.def_article}{obj.name}.".format(obj=self))
+            if self.cursed:
+                report("You feel a growing sensation of dread.")
+            return True
+
+    def when_removed(self, user):
+        if self not in user.equipped.values():
+            report("You're not {obj.equip_action}ing {obj.def_article}{obj.name}.".format(obj=self))
+            return False
+        elif self.cursed:
+            report("You can't remove {obj.def_article}{obj.name}. It's cursed.".format(obj=self))
+            return False
+        else:
+            report("You return {obj.def_article}{obj.name} to your inventory.".format(obj=self))
+            return True
+            
+
+#class Weapon(Item):
+#
+#    def __init__(self, category=None, **kwargs):
+#        Item.__init__(self, **kwargs)
+#        self.category = category # sword, hammer, dagger, etc.
+#        self.accuracy = 0
+#        self.defense = {}
+#        self.attack = 0
 
 class Food(Item):
     pass
@@ -349,7 +453,7 @@ class Monster(Entity):
           speed=80, accuracy=50,
           defense={'melee':30},
           description="Your basic shambling zombie. \"Brains!\"",
-          inventory=[Item()], **kwargs)
+          inventory=[], **kwargs)
 
     def move(self, y, x):
         source = self.location
@@ -445,7 +549,15 @@ class Monster(Entity):
 
     def walkon(self, stomper):
         if isinstance(stomper, Player):
-            stomper.attack(self.location)
+            try:
+                stomper.attack(self.location,
+                               implement=stomper.equipped['melee weapon'])
+            except KeyError:
+                stomper.attack(self.location)
+            except AttributeError:
+                stomper.attack(self.location)
+                # May need to be more clever about this.
+                # lack of self.equipped vs. self.attack()
 
     # Idea: make a monster that moves like a chess knight.
     # ...or is otherwise constrained rook/bishop/pawn style

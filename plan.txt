@@ -208,6 +208,12 @@ When A attacks B:
  3. Melee damage = base damage + gear bonuses
 
 Need shouts for:
- - Hit with a melee attack
- - Miss with a melee attack
- - 
+ x Hit with a melee attack
+ x Miss with a melee attack
+ o 
+
+
+Poisons:
+ Act every x ticks, with y damage, until z total damage has been inflicted (some of which may have been resisted).
+ Poisons can be very fast or very slow acting, for added drama! Perhaps a poisonous mushroom hits for 2000 HP, 2000 ticks in the future...but it can be cured before that point, if possible...
+ Healing poison reduces z, so the effect is not immediate; it usually reduces the amount of time one is affected. In the case of the "hits once for a lot" poison it will reduce the impact of that one hit.

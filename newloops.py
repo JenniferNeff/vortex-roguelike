@@ -3,6 +3,7 @@
 import objects
 import curses, traceback, string, pickle, sys
 import curses.panel
+import unittest
 
 # These are dummy values.
 # standard screen size is 80 x 24.
@@ -164,8 +165,8 @@ class MapScreen(object):
         for y in range(scr_y):
             for x in range(scr_x-1):
                 try:
-                    self.window.addch(y, x,
-                      floor.layer1[y+coords[0]][x+coords[1]].symbol)
+                    draw1 = floor.layer1[y+coords[0]][x+coords[1]]
+                    self.window.addch(y, x, draw1.symbol)
                 except IndexError:
                     pass
                 except curses.error:
@@ -207,20 +208,10 @@ class InventoryMenu(object):
                 self.window.addstr("%s: %s" % (string.ascii_uppercase[i],
                                                hoard[i].name))
                 self.listing[string.ascii_lowercase[i]] = hoard[i]
-                if self.session.PC.weapon == hoard[i]:
-                    self.window.addstr(" (Weapon in hand)")
-                elif self.session.PC.helm == hoard[i]:
-                    self.window.addstr(" (On head)")
-                elif self.session.PC.armor == hoard[i]:
-                    self.window.addstr(" (On body)")
-                elif self.session.PC.shoes == hoard[i]:
-                    self.window.addstr(" (On feet)")
-                elif self.session.PC.ring_right == hoard[i]:
-                    self.window.addstr(" (On right hand)")
-                elif self.session.PC.ring_left == hoard[i]:
-                    self.window.addstr(" (On left hand)")
-                elif self.session.PC.spellbook == hoard[i]:
-                    self.window.addstr(" (Reading)")
+                for j in self.session.PC.equipped.keys():
+                    if self.session.PC.equipped[j] == hoard[i]:
+                        self.window.addstr(" ({0})".format(j))
+
                 self.window.move(4+i, 1)
 
         self.window.addstr(20,0, "Press space to exit this screen")
@@ -306,7 +297,7 @@ class HUD(object):
 
     def __init__(self, session):
         self.window = curses.newwin(1, scr_x, scr_y-1, 0)
-        self.frame = "Level: {0.level}   HP: {0.hp}   Mana: {0.mana}"
+        self.frame = "Level: {0.stats[level]}   HP: {0.hp}   Mana: {0.mana}"
         self.session = session
 
     def display(self):
@@ -406,6 +397,10 @@ def new_inventory_loop(session, hoard, inv, command):
         query = "Which item would you like to examine?"
     elif 'E' == command:
         query = "Which item would you like to Examine Closely?"
+    elif 'w' == command:
+        query = "Which item would you like to wield or wear?"
+    elif 'r' == command:
+        query = "Which item would you like to remove?"
     hoard.display(session.PC.inventory, query)
     inv.top()
     inv.show()
@@ -451,7 +446,11 @@ def title_screen_startup(title):
             session.PC.floor = test
             session.PC.location = PC_position
             test.layer3[session.PC.location] = session.PC
-            testitem = objects.Item(floor=session.PC.floor, location=(6,10))
+            testitem = objects.Item(floor=session.PC.floor, location=(6,10),
+                                    name="Nondescript item", symbol='$')
+            testweapon = objects.Item(floor=session.PC.floor, location=(4,16),
+                                      equip_slot='melee weapon',
+                                      name="Basic Sword", symbol='/')
             testmonster = objects.Monster(floor=session.PC.floor,
                                           location=(7,11))
             return session
@@ -530,7 +529,7 @@ def runit(stdscr):
             leave_map = new_map_loop(thisgame, map_display)
             if None == leave_map:
                 pass
-            elif leave_map in 'EIdei':
+            elif leave_map in 'EIdeirw':
                 if [] == thisgame.PC.inventory:
                     alerts.push("You're not carrying anything.")
                 else:
@@ -568,10 +567,12 @@ def runit(stdscr):
             returned_item = new_inventory_loop(thisgame, invent,
                                                inventory_panel, menu_flag)
             if None != returned_item: # Move this into inventory function
+                mode = 'mapnav' # "up here"
+                curses.doupdate # "up here"
                 if "I" == menu_flag:
                     returned_item.use(user=thisgame.PC)
                 elif "d" == menu_flag:
-                    PC.drop(returned_item)
+                    thisgame.PC.drop(returned_item)
                 elif 'e' == menu_flag:
                     alerts.push(returned_item.description)
                 elif 'E' == menu_flag:
@@ -581,7 +582,11 @@ def runit(stdscr):
                     else:
                         cutscene(returned_item.name, returned_item.description,
                                  None)
-            mode = 'mapnav'
+                elif 'w' == menu_flag:
+                    thisgame.PC.wield_or_wear(returned_item)
+                elif 'r' == menu_flag:
+                    thisgame.PC.remove(returned_item)
+            #mode = 'mapnav' # moved up there for message chains
             heads_up_display.display()
             alerts.shift()
             curses.doupdate
@@ -598,4 +603,7 @@ def runit(stdscr):
             curses.doupdate
 
 
-curses.wrapper(runit)
+#curses.wrapper(runit)
+
+if __name__ == '__main__':
+    curses.wrapper(runit)

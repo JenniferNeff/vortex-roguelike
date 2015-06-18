@@ -119,6 +119,8 @@ class Floor(object):
                         newline.append(objects.make_wall(side="|"))
                     elif "." == line[char]:
                         newline.append(objects.make_floor())
+                    elif "#" == line[char]:
+                        newline.append(objects.make_passage())
                     elif " " == line[char]:
                         newline.append(objects.make_void())
                 except IndexError:
@@ -441,7 +443,7 @@ def title_screen_startup(title):
         if "1" == command: # new game
             session = Session("awesome")
             test = Floor(name="Testing Map")
-            test.load_map("testmap2", session)
+            test.load_map("testmap", session) # map gets loaded here
 
             session.PC.floor = test
             session.PC.location = PC_position
@@ -585,7 +587,8 @@ def runit(stdscr):
                     thisgame.PC.wield_or_wear(returned_item)
                 elif 'r' == menu_flag:
                     thisgame.PC.remove(returned_item)
-            #mode = 'mapnav' # moved up there for message chains
+            mode = 'mapnav' # moved up there for message chains
+                            # but exiting i with space stopped working
             heads_up_display.display()
             alerts.shift()
             curses.doupdate

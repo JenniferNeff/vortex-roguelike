@@ -55,7 +55,7 @@ class Entity(object):
                  traversible=True, can_be_taken=False,
                  hp_max=None, mana_max=None, hp=None, mana=None, defense={},
                  attacks={}, speed=60, accuracy=100,
-                 layer=2, floor=None, location=None,
+                 layer=2, floor=None, location=None, hidden=False,
                  inventory=[],
                  **kwargs
                  ):
@@ -97,6 +97,7 @@ class Entity(object):
         self.layer = layer
         self.floor = floor
         self.location = location
+        self.hidden = hidden
         if self.floor and self.location:
             if 2 == self.layer:
                 self.floor.layer2[self.location] = self
@@ -112,7 +113,7 @@ class Entity(object):
         self.mana = min(self.mana, self.adjusted_stats["max mana"])
 
     def act(self): # all actions that "take one action" call this
-        self.initiative += self.speed
+        self.initiative += self.adjusted_stats["speed"]
         self.calc_stats()
 
     # "Is it possible to step onto the space I want to step on?"
@@ -124,6 +125,10 @@ class Entity(object):
         if dest in self.floor.layer2.keys():
             if not self.floor.layer2[dest].traversible:
                 return False
+            elif isinstance(self.floor.layer2[dest], Passage):
+                return self.floor.layer2[dest].walkon(self)
+                # doors can only be walked on from HJKL
+                # code assumes that doors are on layer 2
         if not self.floor.layer1[dest[0]][dest[1]].traversible:
             return False
         return True
@@ -175,7 +180,7 @@ class Entity(object):
 
     def attack(self, aim, implement=None):
         target = self.floor.layer3[aim]
-        attack_roll = random.randint(0,self.accuracy)
+        attack_roll = random.randint(0,self.adjusted_stats["accuracy"])
         defense_roll = random.randint(0,target.defense.setdefault('melee',0))
         if attack_roll > defense_roll:
             if isinstance(target, Player):
@@ -225,10 +230,26 @@ class Entity(object):
             else:
                 report("{0.def_article}{0.name} has gained a level!".format(self))
 
+class Passage(Entity):
+
+    def __init__(self, **kwargs):
+        Entity.__init__(self, symbol="#", traversible=True)
+        self.rookspots = [(self.location[0]+1, self.location[1]),
+                          (self.location[0]-1, self.location[1]),
+                          (self.location[0], self.location[1]+1),
+                          (self.location[0], self.location[1]-1)]
+
+    def walkon(self,stomper):
+        if self.hidden:
+            return False
+        elif stomper.location in self.rookspots:
+            return True
+        else:
+            return False
+
 class Player(Entity):
 
-    def __init__(self,
-                 **kwargs):
+    def __init__(self, **kwargs):
         Entity.__init__(self, symbol="@", level=1, traversible=False,
                         hp_max=50, mana_max=50, hp=50, mana=50, accuracy=80,
                         defense={'melee':80},
@@ -283,7 +304,8 @@ class Player(Entity):
             self.floor.layer3[dest] = self
 
             # Healing happens here so it won't in combat
-            if self.hp < self.hp_max and random.randint(0,9) == 0:
+            if self.hp < self.adjusted_stats["max HP"] \
+               and random.randint(0,9) == 0:
                 self.hp += 1
 
             self.act()
@@ -522,10 +544,16 @@ class Monster(Entity):
     def check_adjacency(self, victim):
         cells = [(y,x) for y in (-1,0,1) for x in (-1,0,1) \
                  if not (y == 0 and x == 0)]
+        rookcells = [(y,x) for y in (-1,0,1) for x in (-1,0,1) \
+                     if not (y == 0 and x == 0) and (y == 0 or x == 0)]
 
         for i in cells:
             gohere = (self.location[0]+i[0], self.location[1]+i[1])
-            if gohere in self.floor.layer3 and \
+            if gohere in self.floor.layer2 and \
+               (isinstance(self.floor.layer1[gohere[0]][gohere[1]], Passage) and \
+               (i in rookcells and self.floor.layer3[gohere] == victim)):
+                return gohere
+            elif gohere in self.floor.layer3 and \
                self.floor.layer3[gohere] == victim:
                 return gohere
         return None
@@ -546,7 +574,7 @@ class Monster(Entity):
             # gets in the first swing.
         elif adventurer.floor == self.floor:
             self.pursue(adventurer.location[0], adventurer.location[1])
-        self.initiative += self.speed
+        self.initiative += self.adjusted_stats["speed"]
 
     def walkon(self, stomper):
         if isinstance(stomper, Player):
@@ -579,12 +607,14 @@ class Monster(Entity):
             dropzone = self.find_open(2)
             self.floor.layer2[dropzone] = item
             self.inventory.remove(item)
-            
         
 def make_floor():
     return Entity(symbol=".", description="Bare floor.")
 
-def make_wall(side="+"):
+def make_passage():
+    return Entity(symbol="#", description="A dungeon passage.")
+
+def make_wall(side="-"):
     return Entity(symbol=side, description="A wall.", opaque=True,
                   traversible=False)
 

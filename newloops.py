@@ -414,15 +414,15 @@ def new_inventory_loop(session, hoard, inv, command):
         command = hoard.window.getkey()
         if " " == command:
             mode = 'mapnav'
+            inv.hide()
             curses.panel.update_panels()
             curses.doupdate()
-            inv.hide()
             return None
         elif command.isalpha() and command.lower() in hoard.listing.keys():
             mode = 'mapnav'
+            inv.hide()
             curses.panel.update_panels()
             curses.doupdate()
-            inv.hide()
             return hoard.listing[command.lower()]
         command = None
 
@@ -590,7 +590,18 @@ def runit(stdscr):
             mode = 'mapnav' # moved up there for message chains
                             # but exiting i with space stopped working
             heads_up_display.display()
+            ## start added block -- Patched!
+            ## make initiative work with a heap or something
+            alerts.push("Maybe this is where it needs to happen.")
+            while 0 < thisgame.PC.initiative:
+                for i in thisgame.PC.floor.layer3.values():
+                    if 0 == i.initiative:
+                        i.act(thisgame.PC)
+                        map_display.display(thisgame.PC.floor)
+                tick(thisgame)
+            ## end of added block
             alerts.shift()
+            map_display.display(thisgame.PC.floor)
             curses.doupdate
 
         elif 'title' == mode:

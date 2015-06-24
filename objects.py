@@ -371,7 +371,9 @@ class Player(Entity):
     def wield_or_wear(self, item):
         if item.when_equipped(self):
             self.equipped[item.equip_slot] = item
+            report("Your initiative = %d" % self.initiative)
             self.act()
+            report("Your initiative = %d" % self.initiative)
 
     def remove(self, item):
         if item.when_removed(self):
@@ -575,6 +577,7 @@ class Monster(Entity):
         elif adventurer.floor == self.floor:
             self.pursue(adventurer.location[0], adventurer.location[1])
         self.initiative += self.adjusted_stats["speed"]
+        report("%s taking a turn." % self.name)
 
     def walkon(self, stomper):
         if isinstance(stomper, Player):

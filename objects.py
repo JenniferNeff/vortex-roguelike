@@ -371,9 +371,9 @@ class Player(Entity):
     def wield_or_wear(self, item):
         if item.when_equipped(self):
             self.equipped[item.equip_slot] = item
-            report("Your initiative = %d" % self.initiative)
+            #report("Your initiative = %d" % self.initiative)
             self.act()
-            report("Your initiative = %d" % self.initiative)
+            #report("Your initiative = %d" % self.initiative)
 
     def remove(self, item):
         if item.when_removed(self):
@@ -384,6 +384,24 @@ class Player(Entity):
     def perish(self, murderer=None):
         report("Player has died! Resetting HP for ease in testing!")
         self.hp = 50
+
+    def descend(self):
+        try:
+            if self.floor.layer2[self.location].name == "descending stairway":
+                report("This is where going downstairs happens.")
+            else:
+                raise KeyError('Standing on something, but not stairs.')
+        except KeyError:
+            report("You're not standing at a descending stairway.")
+
+    def ascend(self):
+        try:
+            if self.floor.layer2[self.location].name == "ascending stairway":
+                report("This is where going upstairs happens.")
+            else:
+                raise KeyError('Standing on something, but not stairs.')
+        except KeyError:
+            report("You're not standing at an ascending stairway.")
 
 sampledescription = """
 This is a long description of an item. It would be simple enough to pass in
@@ -466,6 +484,18 @@ class Food(Item):
 
 class Spellbook(Item):
     pass
+
+class StairsDown(Entity):
+
+    def __init__(self, **kwargs):
+        Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
+                        symbol=">", name="descending stairway", **kwargs)
+
+class StairsUp(Entity):
+
+    def __init__(self, **kwargs):
+        Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
+                        symbol="<", name="ascending stairway", **kwargs)
 
 class Monster(Entity):
 

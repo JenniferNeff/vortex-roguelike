@@ -21,7 +21,7 @@ class Session(object):
     def __init__(self, name):
         self.name = name
         self.PC = objects.Player()
-        self.world = []
+        self.world = {}
 
     def save_game(self, savename=""):
         if "" != savename:
@@ -87,6 +87,7 @@ class Floor(object):
     def __init__(self, name="Unknown Location", depth=0):
         self.name = name
         self.depth = depth
+        self.filename = "{n}_{dep}.txt".format(n=self.name, dep=depth)
 
         self.layer1 = []
         self.layer2 = {} # (i,j) : object
@@ -98,12 +99,12 @@ class Floor(object):
         self.x_offset = 0
         self.y_offset = 0
 
-    def load_map(self, mapfile, session):
+    def load_map(self, session):
         '''
         Build layer 1 of a map from a text file. A border of void is added to
         each side; this prevents errors when fleeing monsters reach the edge.
         '''
-        getmap = open(mapfile, 'r')
+        getmap = open(self.filename, 'r')
         for line in getmap:
             newline = []
             self.mapvert += 1
@@ -135,7 +136,7 @@ class Floor(object):
             while len(line) < self.maphoriz:
                 line.append(objects.make_void())
 
-        session.world.append(self)
+        session.world[self.name] = self
         self.session = session
 
     def probe(self, coordinates):
@@ -342,6 +343,10 @@ def new_map_loop(session, map_screen, command=None):
         session.PC.take()
     elif "." == command:
         session.PC.rest()
+    elif ">" == command:
+        session.PC.descend()
+    elif "<" == command:
+        session.PC.ascend()
     else:
         return command
     while 0 < session.PC.initiative:
@@ -442,8 +447,8 @@ def title_screen_startup(title):
         curses.doupdate()
         if "1" == command: # new game
             session = Session("awesome")
-            test = Floor(name="Testing Map")
-            test.load_map("testmap", session) # map gets loaded here
+            test = Floor(name="testmap")
+            test.load_map(session) # map gets loaded here
 
             session.PC.floor = test
             session.PC.location = PC_position
@@ -454,6 +459,7 @@ def title_screen_startup(title):
                                       equip_slot='melee weapon',
                                       name="Basic Sword", symbol='/')
             testmonster = monsters.Zombie(flr=session.PC.floor, loc=(7,11))
+            teststairs = objects.StairsDown(floor=session.PC.floor, location=(12,35))
             return session
         if "2" == command: # load game
             title.window.addstr(18,29, "File to load: ")

@@ -148,10 +148,10 @@ class Floor(object):
         return self.empty_tiles.pop()
 
     def populate(self):
-        up = self.random_tile()
-        down = self.random_tile()
-        self.layer2[up] = objects.StairsUp(floor=self, location=up)
-        self.layer2[down] = objects.StairsDown(floor=self, location=down)
+        self.up = self.random_tile()
+        self.down = self.random_tile()
+        self.layer2[self.up] = objects.StairsUp(floor=self, location=self.up)
+        self.layer2[self.down] = objects.StairsDown(floor=self, location=self.down)
 
     def probe(self, coordinates):
         """
@@ -359,8 +359,18 @@ def new_map_loop(session, map_screen, command=None):
         session.PC.rest()
     elif ">" == command:
         send_player_to = session.PC.descend()
+        if send_player_to in session.world.keys():
+            session.PC.floor = session.world[send_player_to]
+            session.PC.location = session.PC.floor.up
+        else:
+            objects.report("There's nowhere to go yet.")
     elif "<" == command:
         send_player_to = session.PC.ascend()
+        if send_player_to in session.world.keys():
+            session.PC.floor = session.world[send_player_to]
+            session.PC.location = session.PC.floor.down
+        else:
+            objects.report("There's nowhere to go yet.")
     else:
         return command
     while 0 < session.PC.initiative:

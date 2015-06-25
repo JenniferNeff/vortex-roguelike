@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import objects, monsters
-import curses, traceback, string, pickle, sys
+import curses, traceback, string, pickle, sys, random
 import curses.panel
 import unittest
 
@@ -87,7 +87,7 @@ class Floor(object):
     def __init__(self, name="Unknown Location", depth=0):
         self.name = name
         self.depth = depth
-        self.filename = "{n}_{dep}.txt".format(n=self.name, dep=depth)
+        self.filename = "{n}_{dep}.map".format(n=self.name, dep=depth)
 
         self.layer1 = []
         self.layer2 = {} # (i,j) : object
@@ -104,6 +104,7 @@ class Floor(object):
         Build layer 1 of a map from a text file. A border of void is added to
         each side; this prevents errors when fleeing monsters reach the edge.
         '''
+        self.empty_tiles = []
         getmap = open(self.filename, 'r')
         for line in getmap:
             newline = []
@@ -120,6 +121,8 @@ class Floor(object):
                         newline.append(objects.make_wall(side="|"))
                     elif "." == line[char]:
                         newline.append(objects.make_floor())
+                        self.empty_tiles.append((self.mapvert-2, char))
+                        # watch that last line for fencepost errors
                     elif "#" == line[char]:
                         newline.append(objects.make_passage())
                     elif " " == line[char]:
@@ -130,7 +133,9 @@ class Floor(object):
         self.layer1.append([objects.make_void()])
         self.layer1.insert(0, [objects.make_void()])
         getmap.close()
+        random.shuffle(self.empty_tiles)
 
+        # Pad the ragged right edges with Void
         for line in self.layer1:
             line.insert(0, objects.make_void())
             while len(line) < self.maphoriz:
@@ -138,6 +143,15 @@ class Floor(object):
 
         session.world[self.name] = self
         self.session = session
+
+    def random_tile(self):
+        return self.empty_tiles.pop()
+
+    def populate(self):
+        up = self.random_tile()
+        down = self.random_tile()
+        self.layer2[up] = objects.StairsUp(floor=self, location=up)
+        self.layer2[down] = objects.StairsDown(floor=self, location=down)
 
     def probe(self, coordinates):
         """
@@ -344,9 +358,9 @@ def new_map_loop(session, map_screen, command=None):
     elif "." == command:
         session.PC.rest()
     elif ">" == command:
-        session.PC.descend()
+        send_player_to = session.PC.descend()
     elif "<" == command:
-        session.PC.ascend()
+        send_player_to = session.PC.ascend()
     else:
         return command
     while 0 < session.PC.initiative:
@@ -449,6 +463,7 @@ def title_screen_startup(title):
             session = Session("awesome")
             test = Floor(name="testmap")
             test.load_map(session) # map gets loaded here
+            test.populate()
 
             session.PC.floor = test
             session.PC.location = PC_position
@@ -459,7 +474,7 @@ def title_screen_startup(title):
                                       equip_slot='melee weapon',
                                       name="Basic Sword", symbol='/')
             testmonster = monsters.Zombie(flr=session.PC.floor, loc=(7,11))
-            teststairs = objects.StairsDown(floor=session.PC.floor, location=(12,35))
+            #teststairs = objects.StairsDown(floor=session.PC.floor, location=(12,35))
             return session
         if "2" == command: # load game
             title.window.addstr(18,29, "File to load: ")
@@ -598,7 +613,7 @@ def runit(stdscr):
             heads_up_display.display()
             ## start added block -- Patched!
             ## make initiative work with a heap or something
-            alerts.push("Maybe this is where it needs to happen.")
+            #alerts.push("DEBUG: Maybe this is where it needs to happen.")
             while 0 < thisgame.PC.initiative:
                 for i in thisgame.PC.floor.layer3.values():
                     if 0 == i.initiative:

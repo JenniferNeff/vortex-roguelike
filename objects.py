@@ -387,8 +387,10 @@ class Player(Entity):
 
     def descend(self):
         try:
-            if self.floor.layer2[self.location].name == "descending stairway":
+            the_stairs = self.floor.layer2[self.location]
+            if the_stairs.name == "descending stairway":
                 report("This is where going downstairs happens.")
+                return the_stairs.destination
             else:
                 raise KeyError('Standing on something, but not stairs.')
         except KeyError:
@@ -396,8 +398,10 @@ class Player(Entity):
 
     def ascend(self):
         try:
-            if self.floor.layer2[self.location].name == "ascending stairway":
+            the_stairs = self.floor.layer2[self.location]
+            if the_stairs.name == "ascending stairway":
                 report("This is where going upstairs happens.")
+                return the_stairs.destination
             else:
                 raise KeyError('Standing on something, but not stairs.')
         except KeyError:
@@ -487,15 +491,23 @@ class Spellbook(Item):
 
 class StairsDown(Entity):
 
-    def __init__(self, **kwargs):
+    def __init__(self, destination=1, **kwargs):
         Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
                         symbol=">", name="descending stairway", **kwargs)
+        if isinstance(destination, str):
+            self.destination = destination
+        elif isinstance (destination, int):
+            self.destination = "Basement Level {dep}".format(dep=self.floor.depth+destination)
 
 class StairsUp(Entity):
 
-    def __init__(self, **kwargs):
+    def __init__(self, destination=1, **kwargs):
         Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
                         symbol="<", name="ascending stairway", **kwargs)
+        if isinstance(destination, str):
+            self.destination = destination
+        elif isinstance (destination, int):
+            self.destination = "Basement Level {dep}".format(dep=self.floor.depth-destination)
 
 class Monster(Entity):
 
@@ -607,7 +619,7 @@ class Monster(Entity):
         elif adventurer.floor == self.floor:
             self.pursue(adventurer.location[0], adventurer.location[1])
         self.initiative += self.adjusted_stats["speed"]
-        report("%s taking a turn." % self.name)
+        #report("DEBUG: %s taking a turn." % self.name)
 
     def walkon(self, stomper):
         if isinstance(stomper, Player):

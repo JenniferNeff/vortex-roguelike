@@ -116,8 +116,10 @@ class Entity(object):
         self.initiative += self.adjusted_stats["speed"]
         self.calc_stats()
 
-    # "Is it possible to step onto the space I want to step on?"
     def traverse_test(self,y,x):
+        '''
+        "Is it possible to step onto the space I want to step on?"
+        '''
         dest = (self.location[0]+y, self.location[1]+x)
         if dest in self.floor.layer3.keys():
             if not self.floor.layer3[dest].traversible:

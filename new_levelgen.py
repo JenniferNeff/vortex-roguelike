@@ -4,8 +4,7 @@ import random, math, sys
 #
 # Level generator for Vortex.
 #
-#
-#
+# Working well as of 2015-06-30.
 #
 #
 #
@@ -15,27 +14,96 @@ import random, math, sys
 # Map places rooms in random "sectors" of the map.
 # Tunnelers generate passages between adjacent rooms.
 
-try:
-    depth = sys.argv[1]
-except:
-    depth = 1
-
-mapwidth = random.randint(3,5)
-mapheight = random.randint(3,5)
-
 x_scale = 20
 y_scale = 10
 
-mapscheme = [[None for x in range(mapwidth)] for y in range(mapheight)]
-mapcanvas = [[" " for x in range(mapwidth * x_scale)] \
-             for y in range(mapheight * y_scale)]
+class Map(object):
 
-flat_sector_list = []
+    def __init__(self, depth=1, density=random.uniform(0.4, 1),
+                 width=random.randint(3,5), height=random.randint(3,5)):
+        self.depth = depth
+        self.density = density
+        self.width = width
+        self.height = height
+        self.scheme = [[None for x in range(self.width)] \
+                       for y in range(self.height)]
+        self.canvas = [[" " for x in range(self.width * x_scale)] \
+                       for y in range(self.height * y_scale)]
+        self.flat_sector_list = []
+        self.list_of_starts = []
+        self.list_of_paths = []
+        self.total_sectors = self.width * self.height
 
-#print mapscheme
+        for i in range(self.height):
+            for j in range(self.width):
+                # This is where sectors get their contents.
+                self.scheme[i][j] = MapSector(i, j, self)
+                self.flat_sector_list.append(self.scheme[i][j])
 
-room_density = random.uniform(0.4, 1)
-list_of_starts = []
+        # Seed the map with one starting sector.
+
+        unconnected_list = self.flat_sector_list[:]
+        connected_list = []
+        random.shuffle(unconnected_list)
+        connected_list.append(unconnected_list.pop())
+        connected_list[0].connected = True
+        #list_of_paths = [] # deprecate
+        connected_sectors = 1
+        #total_sectors = mapwidth * mapheight # deprecate
+
+        # Connect all sectors as a spanning tree.
+
+        while connected_sectors < self.total_sectors:
+            #print "Stuck in path generation!"
+            start = random.choice(connected_list)
+            start_coordinates = (start.y_scheme, start.x_scheme)
+            finish_coordinates = random.choice(start.neighbors)
+            finish = self.scheme[finish_coordinates[0]][finish_coordinates[1]]
+            if not finish.connected:
+                #go = Tunneler(start.anchor, finish.anchor)
+                #print "Pathing from {s} to {f}.".format(s=start.anchor, f=finish.anchor)
+                go = Tunneler(start, finish, self)
+                connected_list.append(finish)
+                unconnected_list.remove(finish)
+                finish.connected = True
+                connected_sectors += 1
+                self.list_of_paths.append(set((start,finish)))
+
+        # Add loops.
+
+        loop_paths = [0,1,2,3] # set how "loopy" the graph is
+        loops_this_level = random.choice(loop_paths)
+        loops_done = 0
+        while loops_done < loops_this_level:
+            start = random.choice(connected_list)
+            start_coordinates = (start.y_scheme, start.x_scheme)
+            finish_coordinates = random.choice(start.neighbors)
+            finish = self.scheme[finish_coordinates[0]][finish_coordinates[1]]
+            if not set((start,finish)) in self.list_of_paths:
+                #print "Pathing loop from {s} to {f}.".format(s=start.anchor, f=finish.anchor)
+                go = Tunneler(start, finish, self)
+                self.list_of_paths.append(set((start,finish)))
+                loops_done += 1
+
+        for i in self.canvas:
+            for j in range(len(i)):
+                if i[j] == "X":
+                    i[j] = "-"
+                elif i[j] == "o":
+                    i[j] = "."
+                elif i[j] == "O":
+                    i[j] = "#"
+
+    def export_as_array(self):
+        return ["".join(i) for i in self.canvas]
+
+    def export_as_txt(self):
+        filename = "vortex_map{d}.txt".format(d=self.depth)
+        write_this = "\n".join(self.export_as_array())
+        f = open(filename, 'w')
+        f.write(write_this)
+        f.close()
+
 
 def check_sector(place):
     """
@@ -81,13 +149,14 @@ def two_D_approach(A,B):
 
 class MapSector(object):
 
-    def __init__(self, y, x):
+    def __init__(self, y, x, parent):
         # perhaps implement a flag for special kinds of rooms
         self.y_scheme = y
         self.x_scheme = x
+        self.parent = parent
         self.real_y_center = y * y_scale + y_scale / 2
         self.real_x_center = x * x_scale + x_scale / 2
-        self.contains_room = random.random() <= room_density
+        self.contains_room = random.random() <= self.parent.density
         self.blueprint = [[" " for x in range(x_scale)] \
                           for y in range(y_scale)]
         self.room_height = None
@@ -98,18 +167,18 @@ class MapSector(object):
         if self.contains_room:
             self.build_room()
 
-        # Passages lead to and from anchors, intersecing walls as fate wills.
+        # Passages lead to and from anchors, intersecting walls as fate wills.
         self.anchor = self.find_anchor()
         self.carve_room()
 
         self.connected = False # set to true when a tunneler reaches it
         if self.y_scheme != 0:
             self.neighbors.append((self.y_scheme - 1, self.x_scheme))
-        if self.y_scheme != mapheight - 1:
+        if self.y_scheme != self.parent.height - 1:
             self.neighbors.append((self.y_scheme + 1, self.x_scheme))
         if self.x_scheme != 0:
             self.neighbors.append((self.y_scheme, self.x_scheme - 1))
-        if self.x_scheme != mapwidth - 1:
+        if self.x_scheme != self.parent.width - 1:
             self.neighbors.append((self.y_scheme, self.x_scheme + 1))
 
     def build_room(self):
@@ -123,8 +192,8 @@ class MapSector(object):
 
         self.A = random.randint(1, math.floor(x_scale * 0.4))
         self.B = random.randint(math.ceil(x_scale * 0.6), x_scale - 1)
-        self.C = random.randint(1, math.floor(y_scale * 0.6))
-        self.D = random.randint(math.ceil(y_scale * 0.6), y_scale - 1)
+        self.C = random.randint(1, math.floor(y_scale * 0.5))
+        self.D = random.randint(math.ceil(y_scale * 0.6), y_scale - 2)
 
         self.B = min(self.B, x_scale - 2)
         self.D = min(self.B, y_scale - 2) # Would like to s/2/1/
@@ -166,18 +235,13 @@ class MapSector(object):
 
                 self.blueprint[i][j] = pen
 
-#        self.anchor = self.find_anchor()
-#        self.blueprint[self.anchor[0]][self.anchor[1]] = "o"
-#        list_of_starts.append((self.y_scheme * y_scale + self.anchor[0],
-#                               self.x_scheme * x_scale + self.anchor[1]))
-
     def carve_room(self):
         """
         The room transfers its image to the mapcanvas in the proper place.
         """
         for i in range(y_scale):
             for j in range(x_scale):
-                mapcanvas[i + (self.y_scheme * y_scale)] \
+                self.parent.canvas[i + (self.y_scheme * y_scale)] \
                          [j + (self.x_scheme * x_scale)] = self.blueprint[i][j]
 
     def find_anchor(self):
@@ -191,7 +255,7 @@ class MapSector(object):
         final_anchor = (self.y_scheme * y_scale + anchor[0],
                         self.x_scheme * x_scale + anchor[1])
 
-        list_of_starts.append(final_anchor)
+        self.parent.list_of_starts.append(final_anchor)
         return final_anchor
 
 class Room(object):
@@ -205,15 +269,16 @@ class Room(object):
 
 class Tunneler(object):
 
-    def __init__(self, s, f):
+    def __init__(self, s, f, parent):
         self.s = s
         self.f = f
+        self.parent = parent
 
 
         self.start = s.anchor
         self.finish = f.anchor
         #self.direction = two_D_approach(start, finish)
-        self.direction = (finish.y_scheme - start.y_scheme, finish.x_scheme - start.x_scheme)
+        self.direction = (self.f.y_scheme - self.s.y_scheme, self.f.x_scheme - self.s.x_scheme)
         #print self.direction
 
         self.position = self.start
@@ -230,7 +295,7 @@ class Tunneler(object):
                        self.position[1] + direction[1])
         #if mapcanvas[destination[0]][destination[1]] == "-" or \
         #     mapcanvas[destination[0]][destination[1]] == "|":
-        if mapcanvas[destination[0]][destination[1]] in "-|+":
+        if self.parent.canvas[destination[0]][destination[1]] in "-|+":
             if (self.exited and \
                 check_sector(destination) == check_sector(self.start)) or \
                (self.entered and \
@@ -238,20 +303,20 @@ class Tunneler(object):
                 return 'blocked'
             else:
                 self.position = destination
-                mapcanvas[destination[0]][destination[1]] = "+"
+                self.parent.canvas[destination[0]][destination[1]] = "+"
                 if check_sector(destination) == check_sector(self.start):
                     self.exited = True
                 elif check_sector(destination) == check_sector(self.finish):
                     self.entered = True
                 return 'door'
-        elif mapcanvas[destination[0]][destination[1]] == " ":
+        elif self.parent.canvas[destination[0]][destination[1]] == " ":
             self.position = destination
-            mapcanvas[destination[0]][destination[1]] = "#"
+            self.parent.canvas[destination[0]][destination[1]] = "#"
             return 'rock'
-        elif mapcanvas[destination[0]][destination[1]] == ".":
+        elif self.parent.canvas[destination[0]][destination[1]] == ".":
             self.position = destination
             return 'floor'
-        elif mapcanvas[destination[0]][destination[1]] == "X":
+        elif self.parent.canvas[destination[0]][destination[1]] == "X":
             return 'corner'
         else:
             self.position = destination
@@ -269,95 +334,16 @@ class Tunneler(object):
                 #print "Navigating " + str(this_way)
             #print self.position
             counter += 1
-            if counter == 30:
-                print "Breaking on path from {s} to {f}.".format(s=check_sector(self.start),f=check_sector(self.finish))
-                break
-
-for i in range(mapheight):
-    for j in range(mapwidth):
-        # This is where sectors get their contents.
-        mapscheme[i][j] = MapSector(i, j)
-        flat_sector_list.append(mapscheme[i][j])
-
-#print mapscheme # testin'
-
-# Set one seed sector as "connected"
-unconnected_list = flat_sector_list[:]
-connected_list = []
-random.shuffle(unconnected_list)
-connected_list.append(unconnected_list.pop())
-connected_list[0].connected = True
-list_of_paths = []
-connected_sectors = 1
-total_sectors = mapwidth * mapheight
-
-# Then start connecting sectors at random to create a spanning tree.
-# The decision of which doors are secret happens when the map is loaded.
-
-while connected_sectors < total_sectors:
-    #print "Stuck in path generation!"
-    start = random.choice(connected_list)
-    start_coordinates = (start.y_scheme, start.x_scheme)
-    finish_coordinates = random.choice(start.neighbors)
-    finish = mapscheme[finish_coordinates[0]][finish_coordinates[1]]
-    if not finish.connected:
-        #go = Tunneler(start.anchor, finish.anchor)
-        #print "Pathing from {s} to {f}.".format(s=start.anchor, f=finish.anchor)
-        go = Tunneler(start, finish)
-        connected_list.append(finish)
-        unconnected_list.remove(finish)
-        finish.connected = True
-        connected_sectors += 1
-        list_of_paths.append(set((start,finish)))
-
-# At this point, the map is a spanning tree, except where paths collide.
-# Sometimes, more loops should be added to keep things interesting.
-
-loop_paths = [0,1,2,3] # tweak numbers to change how "loopy" the graph is
-loops_this_level = random.choice(loop_paths)
-loops_done = 0
-while loops_done < loops_this_level:
-    start = random.choice(connected_list)
-    start_coordinates = (start.y_scheme, start.x_scheme)
-    finish_coordinates = random.choice(start.neighbors)
-    finish = mapscheme[finish_coordinates[0]][finish_coordinates[1]]
-    if not set((start,finish)) in list_of_paths:
-        #print "Pathing loop from {s} to {f}.".format(s=start.anchor, f=finish.anchor)
-        go = Tunneler(start, finish)
-        list_of_paths.append(set((start,finish)))
-        loops_done += 1
-
-# Remove the center and corner markings.
-
-for i in mapcanvas:
-    for j in range(len(i)):
-        if i[j] == "X":
-            i[j] = "-"
-        elif i[j] == "o":
-            i[j] = "."
-        elif i[j] == "O":
-            i[j] = "#"
-
+            #if counter == 40:
+            #    print "Breaking on path from {s} to {f}.".format(s=check_sector(self.start),f=check_sector(self.finish))
+            #    break
          
 # Display the map.
 
-collapsed_canvas = []
+this_map = Map()
 
-for i in mapcanvas:
-    collapsed_canvas.append("".join(i))
-
-# Silence this for production
-#for i in collapsed_canvas:
-#    print i
-
-# Output the map as a .txt.
-
-filename = "vortex_map{d}.txt".format(d=depth)
-f = open(filename, 'w')
-for i in collapsed_canvas:
-    f.write(i)
-    f.write("\n")
-f.close()
+for i in this_map.export_as_array():
+    print i
 
 #print list_of_starts
 

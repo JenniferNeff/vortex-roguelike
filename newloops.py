@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import objects, monsters
+import objects, monsters, new_levelgen
 import curses, traceback, string, pickle, sys, random
 import curses.panel
 import unittest
@@ -105,7 +105,11 @@ class Floor(object):
         each side; this prevents errors when fleeing monsters reach the edge.
         '''
         self.empty_tiles = []
-        getmap = open(self.filename, 'r')
+        self.doors = []
+        try:
+            getmap = open(self.filename, 'r')
+        except IOError:
+            getmap = new_levelgen
         for line in getmap:
             newline = []
             self.mapvert += 1
@@ -115,6 +119,8 @@ class Floor(object):
                 try:
                     if "+" == line[char]:
                         newline.append(objects.make_wall())
+                        self.doors.append((self.mapvert-2, char))
+                        # watch that last line for fencepost errors
                     elif "-" == line[char]:
                         newline.append(objects.make_wall(side="-"))
                     elif "|" == line[char]:
@@ -122,7 +128,7 @@ class Floor(object):
                     elif "." == line[char]:
                         newline.append(objects.make_floor())
                         self.empty_tiles.append((self.mapvert-2, char))
-                        # watch that last line for fencepost errors
+                        # watch for the same fencepost errors
                     elif "#" == line[char]:
                         newline.append(objects.make_passage())
                     elif " " == line[char]:
@@ -134,6 +140,8 @@ class Floor(object):
         self.layer1.insert(0, [objects.make_void()])
         getmap.close()
         random.shuffle(self.empty_tiles)
+        for i in self.doors:
+            self.layer2[i] = objects.Passage(symbol="+")
 
         # Pad the ragged right edges with Void
         for line in self.layer1:

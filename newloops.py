@@ -20,7 +20,7 @@ class Session(object):
 
     def __init__(self, name):
         self.name = name
-        self.PC = objects.Player()
+        self.PC = objects.Player(sess=self.name)
         self.world = {}
 
     def save_game(self, savename=""):
@@ -84,7 +84,7 @@ def track(target):
 
 class Floor(object):
 
-    def __init__(self, name="Unknown Location", depth=0):
+    def __init__(self, name="Unknown Location", depth=0, sess=None):
         self.name = name
         self.depth = depth
         self.filename = "{n}_{dep}.map".format(n=self.name, dep=depth)
@@ -99,7 +99,11 @@ class Floor(object):
         self.x_offset = 0
         self.y_offset = 0
 
-    def load_map(self, session):
+        self.session = sess
+
+        self.load_map()
+
+    def load_map(self):
         '''
         Build layer 1 of a map from a text file. A border of void is added to
         each side; this prevents errors when fleeing monsters reach the edge.
@@ -109,7 +113,8 @@ class Floor(object):
         try:
             getmap = open(self.filename, 'r')
         except IOError:
-            getmap = new_levelgen
+            make_map = new_levelgen.Map(depth=self.depth)
+            getmap = make_map.export_as_array()
         for line in getmap:
             newline = []
             self.mapvert += 1
@@ -119,16 +124,14 @@ class Floor(object):
                 try:
                     if "+" == line[char]:
                         newline.append(objects.make_wall())
-                        self.doors.append((self.mapvert-2, char))
-                        # watch that last line for fencepost errors
+                        self.doors.append((self.mapvert-2, char+1))
                     elif "-" == line[char]:
                         newline.append(objects.make_wall(side="-"))
                     elif "|" == line[char]:
                         newline.append(objects.make_wall(side="|"))
                     elif "." == line[char]:
                         newline.append(objects.make_floor())
-                        self.empty_tiles.append((self.mapvert-2, char))
-                        # watch for the same fencepost errors
+                        self.empty_tiles.append((self.mapvert-2, char+1))
                     elif "#" == line[char]:
                         newline.append(objects.make_passage())
                     elif " " == line[char]:
@@ -138,10 +141,13 @@ class Floor(object):
             self.layer1.append(newline)
         self.layer1.append([objects.make_void()])
         self.layer1.insert(0, [objects.make_void()])
-        getmap.close()
+        try:
+            getmap.close()
+        except AttributeError:
+            pass # didn't use a file
         random.shuffle(self.empty_tiles)
         for i in self.doors:
-            self.layer2[i] = objects.Passage(symbol="+")
+            self.layer2[i] = objects.Passage(symbol="+", location=i)
 
         # Pad the ragged right edges with Void
         for line in self.layer1:
@@ -149,15 +155,17 @@ class Floor(object):
             while len(line) < self.maphoriz:
                 line.append(objects.make_void())
 
-        session.world[self.name] = self
-        self.session = session
+        self.session.world[self.name] = self
+
+        self.up = self.random_tile()
+        self.down = self.random_tile()
+
+        self.populate()
 
     def random_tile(self):
         return self.empty_tiles.pop()
 
     def populate(self):
-        self.up = self.random_tile()
-        self.down = self.random_tile()
         self.layer2[self.up] = objects.StairsUp(floor=self, location=self.up)
         self.layer2[self.down] = objects.StairsDown(floor=self, location=self.down)
 
@@ -188,7 +196,7 @@ class MapScreen(object):
         # Draw Layer 1
         coords = track(self.session.PC)
         for y in range(scr_y):
-            for x in range(scr_x-1):
+            for x in range(scr_x):
                 try:
                     draw1 = floor.layer1[y+coords[0]][x+coords[1]]
                     self.window.addch(y, x, draw1.symbol)
@@ -198,15 +206,17 @@ class MapScreen(object):
                     pass
         for item in floor.layer2.keys():
             # add an if statement so things don't get drawn off the map
-            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
-               (item[1] >= coords[1] and item[1] <= coords[3]):
+            if (item[0] >= coords[0] and item[0] < coords[2]-1) and \
+               (item[1] > coords[1] and item[1] <= coords[3]):
+                # Remove ^ the equals and you will see a strange thing happen.
                 self.window.addstr(item[0]-coords[0], item[1]-coords[1],
                                   floor.layer2[item].symbol)
         for item in floor.layer3.keys():
-            if (item[0] >= coords[0] and item[0] <= coords[2]) and \
-               (item[1] >= coords[1] and item[1] <= coords[3]):
+            if (item[0] >= coords[0] and item[0] < coords[2]-1) and \
+               (item[1] > coords[1] and item[1] <= coords[3]):
                 self.window.addstr(item[0]-coords[0], item[1]-coords[1],
                                   floor.layer3[item].symbol)
+
         self.window.noutrefresh()
 
 class InventoryMenu(object):
@@ -322,7 +332,7 @@ class HUD(object):
 
     def __init__(self, session):
         self.window = curses.newwin(1, scr_x, scr_y-1, 0)
-        self.frame = "Level: {0.stats[level]}   HP: {0.hp}   Mana: {0.mana}"
+        self.frame = "Level: {0.stats[level]}   HP: {0.hp}   Mana: {0.mana} | Depth: {0.floor.depth}"
         self.session = session
 
     def display(self):
@@ -367,18 +377,22 @@ def new_map_loop(session, map_screen, command=None):
         session.PC.rest()
     elif ">" == command:
         send_player_to = session.PC.descend()
-        if send_player_to in session.world.keys():
+        if send_player_to != None:
+            if send_player_to not in session.world.keys():
+                session.world[send_player_to] = Floor(name=send_player_to,
+                  sess=session, depth=session.PC.floor.depth+1)
             session.PC.floor = session.world[send_player_to]
             session.PC.location = session.PC.floor.up
-        else:
-            objects.report("There's nowhere to go yet.")
+            session.PC.floor.layer3[session.PC.location] = session.PC
     elif "<" == command:
         send_player_to = session.PC.ascend()
-        if send_player_to in session.world.keys():
+        if send_player_to != None:
+            if send_player_to not in session.world.keys():
+                session.world[send_player_to] = Floor(name=send_player_to,
+                  sess=session, depth=session.PC.floor.depth-1)
             session.PC.floor = session.world[send_player_to]
             session.PC.location = session.PC.floor.down
-        else:
-            objects.report("There's nowhere to go yet.")
+            session.PC.floor.layer3[session.PC.location] = session.PC
     else:
         return command
     while 0 < session.PC.initiative:
@@ -479,9 +493,10 @@ def title_screen_startup(title):
         curses.doupdate()
         if "1" == command: # new game
             session = Session("awesome")
-            test = Floor(name="testmap")
-            test.load_map(session) # map gets loaded here
-            test.populate()
+            test = Floor(name="testmap", sess=session)
+            session.world[test.name] = test
+            #test.load_map(session) # map gets loaded here
+            #test.populate() # this is in the Floor.__init__ function now
 
             session.PC.floor = test
             session.PC.location = PC_position

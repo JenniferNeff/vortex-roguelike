@@ -340,10 +340,10 @@ class Tunneler(object):
          
 # Display the map.
 
-this_map = Map()
+#this_map = Map()
 
-for i in this_map.export_as_array():
-    print i
+#for i in this_map.export_as_array():
+#    print i
 
 #print list_of_starts
 

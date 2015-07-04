@@ -56,7 +56,7 @@ class Entity(object):
                  hp_max=None, mana_max=None, hp=None, mana=None, defense={},
                  attacks={}, speed=60, accuracy=100,
                  layer=2, floor=None, location=None, hidden=False,
-                 inventory=[],
+                 inventory=[], sess=None,
                  **kwargs
                  ):
         self.stats = {"level": level,
@@ -104,6 +104,7 @@ class Entity(object):
             elif 3 == self.layer:
                 self.floor.layer3[self.location] = self
         self.inventory = inventory
+        self.session = sess
 
     def __str__(self):
         return self.symbol # there might be some better use for this
@@ -235,7 +236,7 @@ class Entity(object):
 class Passage(Entity):
 
     def __init__(self, **kwargs):
-        Entity.__init__(self, symbol="#", traversible=True)
+        Entity.__init__(self, traversible=True, **kwargs)
         self.rookspots = [(self.location[0]+1, self.location[1]),
                           (self.location[0]-1, self.location[1]),
                           (self.location[0], self.location[1]+1),
@@ -390,24 +391,26 @@ class Player(Entity):
     def descend(self):
         try:
             the_stairs = self.floor.layer2[self.location]
-            if the_stairs.name == "descending stairway":
-                report("This is where going downstairs happens.")
+            if isinstance(the_stairs, StairsDown):
+                report("You walk downstairs.")
                 return the_stairs.destination
             else:
-                raise KeyError('Standing on something, but not stairs.')
+                raise KeyError('FLAGRANT ERROR: Standing on something, but not stairs.')
         except KeyError:
             report("You're not standing at a descending stairway.")
+            return None
 
     def ascend(self):
         try:
             the_stairs = self.floor.layer2[self.location]
-            if the_stairs.name == "ascending stairway":
-                report("This is where going upstairs happens.")
+            if isinstance(the_stairs, StairsUp):
+                report("You walk upstairs.")
                 return the_stairs.destination
             else:
-                raise KeyError('Standing on something, but not stairs.')
+                raise KeyError('FLAGRANT ERROR: Standing on something, but not stairs.')
         except KeyError:
             report("You're not standing at an ascending stairway.")
+            return None
 
 sampledescription = """
 This is a long description of an item. It would be simple enough to pass in
@@ -505,7 +508,8 @@ class StairsUp(Entity):
 
     def __init__(self, destination=1, **kwargs):
         Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
-                        symbol="<", name="ascending stairway", **kwargs)
+                        symbol="<", name="ascending stairway",
+                        indef_article="an ", **kwargs)
         if isinstance(destination, str):
             self.destination = destination
         elif isinstance (destination, int):

@@ -393,7 +393,7 @@ class Player(Entity):
             the_stairs = self.floor.layer2[self.location]
             if isinstance(the_stairs, StairsDown):
                 report("You walk downstairs.")
-                return the_stairs.destination
+                return the_stairs
             else:
                 raise KeyError('FLAGRANT ERROR: Standing on something, but not stairs.')
         except KeyError:
@@ -405,7 +405,7 @@ class Player(Entity):
             the_stairs = self.floor.layer2[self.location]
             if isinstance(the_stairs, StairsUp):
                 report("You walk upstairs.")
-                return the_stairs.destination
+                return the_stairs
             else:
                 raise KeyError('FLAGRANT ERROR: Standing on something, but not stairs.')
         except KeyError:
@@ -499,10 +499,7 @@ class StairsDown(Entity):
     def __init__(self, destination=1, **kwargs):
         Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
                         symbol=">", name="descending stairway", **kwargs)
-        if isinstance(destination, str):
-            self.destination = destination
-        elif isinstance (destination, int):
-            self.destination = "Basement Level {dep}".format(dep=self.floor.depth+destination)
+        self.destination = destination
 
 class StairsUp(Entity):
 
@@ -510,10 +507,7 @@ class StairsUp(Entity):
         Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
                         symbol="<", name="ascending stairway",
                         indef_article="an ", **kwargs)
-        if isinstance(destination, str):
-            self.destination = destination
-        elif isinstance (destination, int):
-            self.destination = "Basement Level {dep}".format(dep=self.floor.depth-destination)
+        self.destination = destination
 
 class Monster(Entity):
 

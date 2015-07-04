@@ -149,10 +149,12 @@ class Floor(object):
         for i in self.doors:
             self.layer2[i] = objects.Passage(symbol="+", location=i)
 
-        # Pad the ragged right edges with Void
+        # Pad the ragged edges with Void
+        while len(self.layer1) < scr_y:
+            self.layer1.append([])
         for line in self.layer1:
             line.insert(0, objects.make_void())
-            while len(line) < self.maphoriz:
+            while len(line) < max(self.maphoriz, scr_x):
                 line.append(objects.make_void())
 
         self.session.world[self.name] = self
@@ -377,22 +379,34 @@ def new_map_loop(session, map_screen, command=None):
         session.PC.rest()
     elif ">" == command:
         send_player_to = session.PC.descend()
-        if send_player_to != None:
-            if send_player_to not in session.world.keys():
-                session.world[send_player_to] = Floor(name=send_player_to,
-                  sess=session, depth=session.PC.floor.depth+1)
-            session.PC.floor = session.world[send_player_to]
-            session.PC.location = session.PC.floor.up
-            session.PC.floor.layer3[session.PC.location] = session.PC
+        try:
+            if isinstance(send_player_to.destination, objects.StairsUp):
+                session.PC.floor = send_player_to.destination.floor
+                session.PC.location = send_player_to.destination.location
+                session.PC.floor.layer3[session.PC.location] = session.PC
+            elif isinstance(send_player_to.destination, int):
+                session.PC.floor = Floor(name="Basement level {d}".format(d=session.PC.floor.depth+send_player_to.destination), sess=session, depth=session.PC.floor.depth+send_player_to.destination)
+                session.PC.location = session.PC.floor.up
+                session.PC.floor.layer3[session.PC.location] = session.PC
+                send_player_to.destination = session.PC.floor.layer2[session.PC.location]
+                session.PC.floor.layer2[session.PC.location].destination = send_player_to
+        except IOError:
+            pass
     elif "<" == command:
         send_player_to = session.PC.ascend()
-        if send_player_to != None:
-            if send_player_to not in session.world.keys():
-                session.world[send_player_to] = Floor(name=send_player_to,
-                  sess=session, depth=session.PC.floor.depth-1)
-            session.PC.floor = session.world[send_player_to]
-            session.PC.location = session.PC.floor.down
-            session.PC.floor.layer3[session.PC.location] = session.PC
+        try:
+            if isinstance(send_player_to.destination, objects.StairsDown):
+                session.PC.floor = send_player_to.destination.floor
+                session.PC.location = send_player_to.destination.location
+                session.PC.floor.layer3[session.PC.location] = session.PC
+            elif isinstance(send_player_to.destination, int):
+                session.PC.floor = Floor(name="Basement level {d}".format(d=session.PC.floor.depth-send_player_to.destination), sess=session, depth=session.PC.floor.depth-send_player_to.destination)
+                session.PC.location = session.PC.floor.down
+                session.PC.floor.layer3[session.PC.location] = session.PC
+                send_player_to.destination = session.PC.floor.layer2[session.PC.location]
+                session.PC.floor.layer2[session.PC.location].destination = send_player_to
+        except IOError:
+            pass
     else:
         return command
     while 0 < session.PC.initiative:

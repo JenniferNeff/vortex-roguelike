@@ -123,7 +123,7 @@ class Floor(object):
                     self.maphoriz = char
                 try:
                     if "+" == line[char]:
-                        newline.append(objects.make_wall())
+                        newline.append(objects.make_passage())
                         self.doors.append((self.mapvert-2, char+1))
                     elif "-" == line[char]:
                         newline.append(objects.make_wall(side="-"))
@@ -147,7 +147,7 @@ class Floor(object):
             pass # didn't use a file
         random.shuffle(self.empty_tiles)
         for i in self.doors:
-            self.layer2[i] = objects.Passage(symbol="+", location=i)
+            self.layer2[i] = objects.Door(symbol="+", location=i)
 
         # Pad the ragged edges with Void
         while len(self.layer1) < scr_y:
@@ -165,6 +165,10 @@ class Floor(object):
         self.populate()
 
     def random_tile(self):
+        """
+        Return a random tile of empty floor. Intended to be used only at
+        initialization, as it does not reset.
+        """
         return self.empty_tiles.pop()
 
     def populate(self):
@@ -181,6 +185,28 @@ class Floor(object):
             return self.layer2[coordinates]
         else:
             return self.layer1[coordinates[0]][coordinates[1]]
+
+    def traverse_test(self, coordinates, moving_rookwise=False):
+        '''
+        "Is it possible for an entity to walk onto the given tile?"
+        '''
+        try:
+            if not self.layer3[coordinates].traversible:
+                return False
+        except KeyError:
+            pass
+        try:
+            if not self.layer2[coordinates].traversible:
+                return False
+            if self.layer2[coordinates].traversible == 'rookwise' and not moving_rookwise:
+                return False
+        except KeyError:
+            pass
+        if not self.layer1[coordinates[0]][coordinates[1]].traversible:
+            return False
+        elif self.layer1[coordinates[0]][coordinates[1]].traversible == 'rookwise' and not moving_rookwise:
+            return False
+        return True
 
 class MapScreen(object):
 

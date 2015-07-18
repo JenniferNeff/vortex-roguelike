@@ -121,20 +121,16 @@ class Entity(object):
         '''
         "Is it possible to step onto the space I want to step on?"
         '''
+        # wrangling this and the floors counterpart, at the moment
         dest = (self.location[0]+y, self.location[1]+x)
-        if dest in self.floor.layer3.keys():
-            if not self.floor.layer3[dest].traversible:
-                return False
-        if dest in self.floor.layer2.keys():
-            if not self.floor.layer2[dest].traversible:
-                return False
-            elif isinstance(self.floor.layer2[dest], Passage):
-                return self.floor.layer2[dest].walkon(self)
-                # doors can only be walked on from HJKL
-                # code assumes that doors are on layer 2
-        if not self.floor.layer1[dest[0]][dest[1]].traversible:
-            return False
-        return True
+        if y == 0 or x == 0:
+            moving_rookwise = True
+        else:
+            moving_rookwise = False
+
+        result = self.floor.traverse_test(dest, moving_rookwise)
+        #report(str(result))
+        return result
 
     def find_open(self, layer):
         '''
@@ -233,22 +229,10 @@ class Entity(object):
             else:
                 report("{0.def_article}{0.name} has gained a level!".format(self))
 
-class Passage(Entity):
+class Door(Entity):
 
     def __init__(self, **kwargs):
-        Entity.__init__(self, traversible=True, **kwargs)
-        self.rookspots = [(self.location[0]+1, self.location[1]),
-                          (self.location[0]-1, self.location[1]),
-                          (self.location[0], self.location[1]+1),
-                          (self.location[0], self.location[1]-1)]
-
-    def walkon(self,stomper):
-        if self.hidden:
-            return False
-        elif stomper.location in self.rookspots:
-            return True
-        else:
-            return False
+        Entity.__init__(self, name='door', traversible='rookwise', **kwargs)
 
 class Player(Entity):
 
@@ -594,7 +578,7 @@ class Monster(Entity):
         for i in cells:
             gohere = (self.location[0]+i[0], self.location[1]+i[1])
             if gohere in self.floor.layer2 and \
-               (isinstance(self.floor.layer1[gohere[0]][gohere[1]], Passage) and \
+               (isinstance(self.floor.layer1[gohere[0]][gohere[1]], Door) and \
                (i in rookcells and self.floor.layer3[gohere] == victim)):
                 return gohere
             elif gohere in self.floor.layer3 and \
@@ -654,13 +638,15 @@ class Monster(Entity):
             self.inventory.remove(item)
         
 def make_floor():
-    return Entity(symbol=".", description="Bare floor.")
+    return Entity(name="bare floor", indef_article="", symbol=".",
+                  description="Bare floor.")
 
 def make_passage():
-    return Entity(symbol="#", description="A dungeon passage.")
+    return Entity(name="passage", symbol="#", traversible='rookwise',
+                  description="A dungeon passage.")
 
 def make_wall(side="-"):
-    return Entity(symbol=side, description="A wall.", opaque=True,
+    return Entity(name="wall", symbol=side, description="A wall.", opaque=True,
                   traversible=False)
 
 def make_void():

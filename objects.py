@@ -11,6 +11,7 @@
 # 7: white
 
 import random, math
+import new_levelgen
 
 # def_article: "the " for most things. "" for uniques with proper names.
 # indef_article: "a " or "an " for most things, "the" for uniques
@@ -56,7 +57,7 @@ class Entity(object):
                  hp_max=None, mana_max=None, hp=None, mana=None, defense={},
                  attacks={}, speed=60, accuracy=100,
                  layer=2, floor=None, location=None, hidden=False,
-                 inventory=[], sess=None,
+                 inventory=[], sess=None, gender=None,
                  **kwargs
                  ):
         self.stats = {"level": level,
@@ -232,7 +233,8 @@ class Entity(object):
 class Door(Entity):
 
     def __init__(self, **kwargs):
-        Entity.__init__(self, name='door', traversible='rookwise', **kwargs)
+        Entity.__init__(self, name='door', traversible='rookwise', symbol="+",
+                        **kwargs)
 
 class Player(Entity):
 
@@ -495,16 +497,14 @@ class StairsUp(Entity):
 
 class Monster(Entity):
 
-    def __init__(self, **kwargs):
-        Entity.__init__(self, layer=3, #symbol="Z", #placeholder
-          traversible=False, #name="Demo Zombie",
+    def __init__(self, scared_at=0, brave_at=90, **kwargs):
+        Entity.__init__(self, layer=3,
+          traversible=False,
           can_be_taken=False,
-          #hp=20, attacks={'unarmed':3},
-          #speed=80, accuracy=50,
-          #defense={'melee':30},
-          #description="Your basic shambling zombie. \"Brains!\"",
-          #inventory=[],
           **kwargs)
+        self.scared_at = scared_at
+        self.brave_at = brave_at
+        self.scared = False
 
     def move(self, y, x):
         source = self.location
@@ -526,7 +526,7 @@ class Monster(Entity):
         '''
         The creature chases after the given coordinates (y,x)--usually the
         player's location. Pass flee=-1 to this method to make the monster
-        run away instead.
+        run away from that point instead.
         '''
         moveY = 0
         moveX = 0
@@ -558,16 +558,15 @@ class Monster(Entity):
         elif -1 == flee and self.traverse_test(moveY-edgeflee,0):
             self.move(moveY-edgeflee, 0)
 
-    def wander(self): # use for stupid, confused, and blind monsters
+    def wander(self):
+        '''
+        A movement behavior for stupid, confused, and blind monsters.
+        '''
         moveY = random.choice((-1,0,1))
         moveX = random.choice((-1,0,1))
 
         if moveY != 0 or moveX != 0:
             self.move(moveY, moveX)
-
-#    def attack(self, aim): # aim is the location to attack
-#        shouts.append("The %s performs a useless placeholder attack." % \
-#                      self.name)
 
     def check_adjacency(self, victim):
         cells = [(y,x) for y in (-1,0,1) for x in (-1,0,1) \
@@ -586,22 +585,39 @@ class Monster(Entity):
                 return gohere
         return None
 
-    def act(self, adventurer):
+    def AI_melee_brute(self, adventurer):
         '''
-        This is where the creature decides what to do on its turn:
-        a long list of elifs, each of which calls a different other method.
+        AI for a monster that uses only melee strikes, and flees at low health.
         The explicit use of self.attack() guarantees that monsters stand still
         and attack when diagonally adjacent to a target rather than trying to
         edge over to a squarely adjacent position.
         '''
-        strike = self.check_adjacency(adventurer)
-        if strike != None:
-            self.attack(strike)
-            adventurer.running = False
-            # prevents PC from autoattacking at the end of a run if the monster
-            # gets in the first swing.
-        elif adventurer.floor == self.floor:
-            self.pursue(adventurer.location[0], adventurer.location[1])
+        if adventurer.floor != self.floor:
+            return
+
+        if 100 * self.hp / self.hp_max < self.scared_at:
+            self.scared = True
+        elif 100 * self.hp / self.hp_max > self.brave_at:
+            self.scared = False
+
+        if self.scared:
+            self.pursue(adventurer.location[0], adventurer.location[1], flee=-1)
+        else:
+            strike = self.check_adjacency(adventurer)
+            if strike != None:
+                self.attack(strike)
+                adventurer.running = False
+                # prevents PC from autoattacking at the end of a run if the
+                # monster gets in the first swing.
+            elif adventurer.floor == self.floor:
+                self.pursue(adventurer.location[0], adventurer.location[1])
+
+    def act(self, adventurer):
+        '''
+        This is where the creature decides what to do on its turn:
+        a long list of elifs, each of which calls a different other method.
+        '''
+        self.AI_melee_brute(adventurer)
         self.initiative += self.adjusted_stats["speed"]
         #report("DEBUG: %s taking a turn." % self.name)
 
@@ -636,6 +652,138 @@ class Monster(Entity):
             dropzone = self.find_open(2)
             self.floor.layer2[dropzone] = item
             self.inventory.remove(item)
+
+class Floor(object):
+
+    def __init__(self, name="Unknown Location", depth=0, sess=None,
+                 screen_x=80, screen_y=22):
+        self.name = name
+        self.depth = depth
+        self.filename = "{n}_{dep}.map".format(n=self.name, dep=depth)
+
+        self.layer1 = []
+        self.layer2 = {} # (i,j) : object
+        self.layer3 = {}
+
+        self.maphoriz = 0
+        self.mapvert = 2
+
+        self.x_offset = 0
+        self.y_offset = 0
+
+        self.session = sess
+        self.scr_x = screen_x
+        self.scr_y = screen_y
+
+        self.load_map()
+
+    def load_map(self):
+        '''
+        Build layer 1 of a map from a text file. A border of void is added to
+        each side; this prevents errors when fleeing monsters reach the edge.
+        '''
+        self.empty_tiles = []
+        self.doors = []
+        try:
+            getmap = open(self.filename, 'r')
+        except IOError:
+            make_map = new_levelgen.Map(depth=self.depth)
+            getmap = make_map.export_as_array()
+        for line in getmap:
+            newline = []
+            self.mapvert += 1
+            for char in range(len(line)+1):
+                if self.maphoriz < char:
+                    self.maphoriz = char
+                try:
+                    if "+" == line[char]:
+                        newline.append(make_passage())
+                        self.doors.append((self.mapvert-2, char+1))
+                    elif "-" == line[char]:
+                        newline.append(make_wall(side="-"))
+                    elif "|" == line[char]:
+                        newline.append(make_wall(side="|"))
+                    elif "." == line[char]:
+                        newline.append(make_floor())
+                        self.empty_tiles.append((self.mapvert-2, char+1))
+                    elif "#" == line[char]:
+                        newline.append(make_passage())
+                    elif " " == line[char]:
+                        newline.append(make_void())
+                except IndexError:
+                    newline.append(make_void())
+            self.layer1.append(newline)
+        self.layer1.append([make_void()])
+        self.layer1.insert(0, [make_void()])
+        try:
+            getmap.close()
+        except AttributeError:
+            pass # didn't use a file
+        random.shuffle(self.empty_tiles)
+        for i in self.doors:
+            self.layer2[i] = Door(location=i)
+
+        # Pad the ragged edges with Void
+        while len(self.layer1) < self.scr_y:
+            self.layer1.append([])
+        for line in self.layer1:
+            line.insert(0, make_void())
+            while len(line) < max(self.maphoriz, self.scr_x):
+                line.append(make_void())
+
+        self.session.world[self.name] = self
+
+        self.up = self.random_tile()
+        self.down = self.random_tile()
+
+        self.populate()
+
+    def random_tile(self):
+        """
+        Return a random tile of empty floor. Intended to be used only at
+        initialization, as it does not reset.
+        """
+        return self.empty_tiles.pop()
+
+    def populate(self):
+        self.layer2[self.up] = StairsUp(floor=self, location=self.up)
+        self.layer2[self.down] = StairsDown(floor=self, location=self.down)
+
+    def probe(self, coordinates):
+        """
+        Return whatever object is visible on the map at that location.
+        """
+        if coordinates in self.layer3.keys():
+            return self.layer3[coordinates]
+        elif coordinates in self.layer2.keys():
+            return self.layer2[coordinates]
+        else:
+            return self.layer1[coordinates[0]][coordinates[1]]
+
+    def traverse_test(self, coordinates, moving_rookwise=False):
+        '''
+        "Is it possible for an entity to walk onto the given tile?"
+        '''
+        try:
+            if not self.layer3[coordinates].traversible:
+                return False
+        except KeyError:
+            pass
+        try:
+            if not self.layer2[coordinates].traversible:
+                return False
+            if self.layer2[coordinates].traversible == 'rookwise' \
+               and not moving_rookwise:
+                return False
+        except KeyError:
+            pass
+        if not self.layer1[coordinates[0]][coordinates[1]].traversible:
+            return False
+        elif self.layer1[coordinates[0]][coordinates[1]].traversible == 'rookwise' and not moving_rookwise:
+            return False
+        return True
+
+
         
 def make_floor():
     return Entity(name="bare floor", indef_article="", symbol=".",

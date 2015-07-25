@@ -82,131 +82,6 @@ def track(target):
 
     return (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
 
-class Floor(object):
-
-    def __init__(self, name="Unknown Location", depth=0, sess=None):
-        self.name = name
-        self.depth = depth
-        self.filename = "{n}_{dep}.map".format(n=self.name, dep=depth)
-
-        self.layer1 = []
-        self.layer2 = {} # (i,j) : object
-        self.layer3 = {}
-
-        self.maphoriz = 0
-        self.mapvert = 2
-
-        self.x_offset = 0
-        self.y_offset = 0
-
-        self.session = sess
-
-        self.load_map()
-
-    def load_map(self):
-        '''
-        Build layer 1 of a map from a text file. A border of void is added to
-        each side; this prevents errors when fleeing monsters reach the edge.
-        '''
-        self.empty_tiles = []
-        self.doors = []
-        try:
-            getmap = open(self.filename, 'r')
-        except IOError:
-            make_map = new_levelgen.Map(depth=self.depth)
-            getmap = make_map.export_as_array()
-        for line in getmap:
-            newline = []
-            self.mapvert += 1
-            for char in range(len(line)+1):
-                if self.maphoriz < char:
-                    self.maphoriz = char
-                try:
-                    if "+" == line[char]:
-                        newline.append(objects.make_passage())
-                        self.doors.append((self.mapvert-2, char+1))
-                    elif "-" == line[char]:
-                        newline.append(objects.make_wall(side="-"))
-                    elif "|" == line[char]:
-                        newline.append(objects.make_wall(side="|"))
-                    elif "." == line[char]:
-                        newline.append(objects.make_floor())
-                        self.empty_tiles.append((self.mapvert-2, char+1))
-                    elif "#" == line[char]:
-                        newline.append(objects.make_passage())
-                    elif " " == line[char]:
-                        newline.append(objects.make_void())
-                except IndexError:
-                    newline.append(objects.make_void())
-            self.layer1.append(newline)
-        self.layer1.append([objects.make_void()])
-        self.layer1.insert(0, [objects.make_void()])
-        try:
-            getmap.close()
-        except AttributeError:
-            pass # didn't use a file
-        random.shuffle(self.empty_tiles)
-        for i in self.doors:
-            self.layer2[i] = objects.Door(symbol="+", location=i)
-
-        # Pad the ragged edges with Void
-        while len(self.layer1) < scr_y:
-            self.layer1.append([])
-        for line in self.layer1:
-            line.insert(0, objects.make_void())
-            while len(line) < max(self.maphoriz, scr_x):
-                line.append(objects.make_void())
-
-        self.session.world[self.name] = self
-
-        self.up = self.random_tile()
-        self.down = self.random_tile()
-
-        self.populate()
-
-    def random_tile(self):
-        """
-        Return a random tile of empty floor. Intended to be used only at
-        initialization, as it does not reset.
-        """
-        return self.empty_tiles.pop()
-
-    def populate(self):
-        self.layer2[self.up] = objects.StairsUp(floor=self, location=self.up)
-        self.layer2[self.down] = objects.StairsDown(floor=self, location=self.down)
-
-    def probe(self, coordinates):
-        """
-        Return whatever object is visible on the map at that location.
-        """
-        if coordinates in self.layer3.keys():
-            return self.layer3[coordinates]
-        elif coordinates in self.layer2.keys():
-            return self.layer2[coordinates]
-        else:
-            return self.layer1[coordinates[0]][coordinates[1]]
-
-    def traverse_test(self, coordinates, moving_rookwise=False):
-        '''
-        "Is it possible for an entity to walk onto the given tile?"
-        '''
-        try:
-            if not self.layer3[coordinates].traversible:
-                return False
-        except KeyError:
-            pass
-        try:
-            if not self.layer2[coordinates].traversible:
-                return False
-            if self.layer2[coordinates].traversible == 'rookwise' and not moving_rookwise:
-                return False
-        except KeyError:
-            pass
-        if not self.layer1[coordinates[0]][coordinates[1]].traversible:
-            return False
-        elif self.layer1[coordinates[0]][coordinates[1]].traversible == 'rookwise' and not moving_rookwise:
-            return False
-        return True
 
 class MapScreen(object):
 
@@ -411,7 +286,7 @@ def new_map_loop(session, map_screen, command=None):
                 session.PC.location = send_player_to.destination.location
                 session.PC.floor.layer3[session.PC.location] = session.PC
             elif isinstance(send_player_to.destination, int):
-                session.PC.floor = Floor(name="Basement level {d}".format(d=session.PC.floor.depth+send_player_to.destination), sess=session, depth=session.PC.floor.depth+send_player_to.destination)
+                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=session.PC.floor.depth+send_player_to.destination), sess=session, depth=session.PC.floor.depth+send_player_to.destination, screen_x=scr_x, screen_y=scr_y)
                 session.PC.location = session.PC.floor.up
                 session.PC.floor.layer3[session.PC.location] = session.PC
                 send_player_to.destination = session.PC.floor.layer2[session.PC.location]
@@ -426,7 +301,7 @@ def new_map_loop(session, map_screen, command=None):
                 session.PC.location = send_player_to.destination.location
                 session.PC.floor.layer3[session.PC.location] = session.PC
             elif isinstance(send_player_to.destination, int):
-                session.PC.floor = Floor(name="Basement level {d}".format(d=session.PC.floor.depth-send_player_to.destination), sess=session, depth=session.PC.floor.depth-send_player_to.destination)
+                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=session.PC.floor.depth-send_player_to.destination), sess=session, depth=session.PC.floor.depth-send_player_to.destination, screen_x=scr_x, screen_y=scr_y)
                 session.PC.location = session.PC.floor.down
                 session.PC.floor.layer3[session.PC.location] = session.PC
                 send_player_to.destination = session.PC.floor.layer2[session.PC.location]
@@ -533,7 +408,8 @@ def title_screen_startup(title):
         curses.doupdate()
         if "1" == command: # new game
             session = Session("awesome")
-            test = Floor(name="testmap", sess=session)
+            test = objects.Floor(name="testmap", sess=session,
+                                 screen_x=scr_x, screen_y=scr_y)
             session.world[test.name] = test
             #test.load_map(session) # map gets loaded here
             #test.populate() # this is in the Floor.__init__ function now
@@ -547,6 +423,7 @@ def title_screen_startup(title):
                                       equip_slot='melee weapon',
                                       name="Basic Sword", symbol='/')
             testmonster = monsters.Zombie(flr=session.PC.floor, loc=(7,11))
+            testmonster2 = monsters.Snake(flr=session.PC.floor, loc=(12,46))
             #teststairs = objects.StairsDown(floor=session.PC.floor, location=(12,35))
             return session
         if "2" == command: # load game

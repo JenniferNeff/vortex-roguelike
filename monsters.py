@@ -14,6 +14,8 @@ def Zombie(flr=None, loc=None):
      attacks={'unarmed':3},
      defense={'melee':30},
      inventory=[],
+     scared_at=0, # flees at this % of HP
+     brave_at=90,
      floor=flr, location=loc
      )
 
@@ -29,5 +31,7 @@ def Snake(flr=None, loc=None):
      attacks={'unarmed':3},
      defense={'melee':30},
      inventory=[],
+     scared_at=50,
+     brave_at=90,
      floor=flr, location=loc
      )

@@ -256,9 +256,23 @@ class Player(Entity):
         self.hunger = 0
         self.thirst = 0
         self.fatigue = 0
+
+        self.hungry = "      "
+        self.thirsty = False
+        self.fatigued = False
+        self.hunger_timer = 300
+
         self.running = False
 
         self.skills = {}
+
+    def act(self): # all actions that "take one action" call this
+        #if random.randint(1,100) < 30:
+        if True: # for testing
+            self.hunger += 1
+
+        self.initiative += self.adjusted_stats["speed"]
+        self.calc_stats()
 
     def calc_stats(self):
         for i in self.stats.keys():
@@ -269,6 +283,16 @@ class Player(Entity):
                     self.adjusted_stats[j] += i.stats[j]
         except AttributeError:
             pass
+
+        if self.hunger >= 2400:
+            self.hungry = "Weak  "
+        elif self.hunger >= 1600:
+            self.hungry = "Hungry"
+        elif self.hunger >= 800:
+            self.hungry = "Pekish"
+        else:
+            self.hungry = "      "
+
         # Add other temporary inflictions; monsters will do this too.
         # If anything should have a max/min value, that goes here.
         self.hp = min(self.hp, self.adjusted_stats["max HP"])
@@ -409,8 +433,6 @@ class Item(Entity):
     def __init__(self, equip_slot=None, cursed=False, **kwargs):
         Entity.__init__(self, layer=2, # placeholder
           traversible=True, can_be_taken=True,
-          description="Short description of a nondescript item.",
-          longdesc=sampledescription,
           **kwargs)
           # how to pass in more arguments properly??
         self.equip_slot = equip_slot
@@ -463,6 +485,9 @@ class Item(Entity):
         else:
             report("You return {obj.def_article}{obj.name} to your inventory.".format(obj=self))
             return True
+
+    def self_destruct(self, user):
+        user.inventory.remove(self)
             
 
 #class Weapon(Item):
@@ -475,7 +500,26 @@ class Item(Entity):
 #        self.attack = 0
 
 class Food(Item):
-    pass
+
+    def __init__(self,
+                 calories=300, caffeine=0, healthy=True, **kwargs):
+        Item.__init__(self, #layer=2, # placeholder
+          symbol=":", #equip_slot=None, cursed=False,
+          **kwargs)
+
+        self.calories = calories
+        self.caffeine = caffeine
+        self.healthy = healthy
+
+    def use(self, user):
+        if user.hunger < self.calories:
+            report("You're not hungry enough for {obj.indef_article}{obj.name}.".format(obj=self))
+        else:
+            report("You eat {obj.indef_article}{obj.name}. Yum!".format(obj=self))
+            user.hunger -= self.calories
+            user.hunger_timer = 300
+            self.self_destruct(user)
+            user.act()
 
 class Spellbook(Item):
     pass

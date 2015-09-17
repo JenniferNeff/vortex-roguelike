@@ -235,7 +235,7 @@ class HUD(object):
 
     def __init__(self, session):
         self.window = curses.newwin(1, scr_x, scr_y-1, 0)
-        self.frame = "Level: {0.stats[level]}   HP: {0.hp}   Mana: {0.mana} | Depth: {0.floor.depth}"
+        self.frame = "Level: {0.stats[level]}   HP: {0.hp}   Mana: {0.mana} {0.hungry} | Depth: {0.floor.depth}"
         self.session = session
 
     def display(self):
@@ -422,6 +422,10 @@ def title_screen_startup(title):
             testweapon = objects.Item(floor=session.PC.floor, location=(4,16),
                                       equip_slot='melee weapon',
                                       name="Basic Sword", symbol='/')
+            testfood = objects.Food(floor=session.PC.floor, location=(5,20),
+                                    name="Mesa Bar",
+                                    description="A chewy energy bar.",
+                                    longdesc="A well-balanced nutrition bar, marketed heavily towards adventurers.")
             testmonster = monsters.Zombie(flr=session.PC.floor, loc=(7,11))
             testmonster2 = monsters.Snake(flr=session.PC.floor, loc=(12,46))
             #teststairs = objects.StairsDown(floor=session.PC.floor, location=(12,35))
@@ -498,6 +502,9 @@ def runit(stdscr):
     while True:
 
         if 'mapnav' == mode:
+            map_display.display(thisgame.PC.floor)
+            heads_up_display.display()
+            curses.doupdate
             leave_map = new_map_loop(thisgame, map_display)
             if None == leave_map:
                 pass
@@ -516,7 +523,7 @@ def runit(stdscr):
                 thisgame.save_game(savename=newname)
                 alerts.push("Game saved as %s." % thisgame.name)
             alerts.shift()
-            heads_up_display.display()
+            heads_up_display.display() # could be removed?
 
         if 'view' == mode:
             alerts.push("Use movement keys to select a cell on the map. (Shift-move to go 5 squares.)")

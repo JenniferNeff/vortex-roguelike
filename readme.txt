@@ -10,11 +10,12 @@ bjn
 
 i - Display the [inventory].
 I - [Invoke] (that is, use) an item from your inventory.
+    (This action is also used to eat food.)
 . - Rest for one turn.
 t - [take] an item you are standing on.
 d - [drop] an item from your inventory.
 e - [examine] an item from your inventory.
-E - [Examine Closely] to see a longer description of inventory items.
+E - [Examine closely] to see a longer description of inventory items.
     (Not all items have a longer description yet.)
 v - [view] an object visible on the map.
 w - [wield or wear] an item in your inventory.
@@ -28,10 +29,18 @@ Attack monsters by walking onto them. More complex ways of attacking with ranged
 
 Objects and items:
 
-@ - That's you!
-. - The floor
-# - A passage between rooms
-$ - An item you can Invoke
-/ - A sword
--| - Walls
-A-Z - Monsters
+@     That's you!
+.     The floor
+#     A passage between rooms
+$     An item you can Invoke
+/     A sword
+:     Food
+-|    Walls
++     Door
+A-Z   Monsters
+
+Planned symbols:
+~   liquid on the floor
+!   potion
+*   gold
+]   armor

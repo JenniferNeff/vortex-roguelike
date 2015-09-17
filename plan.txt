@@ -54,6 +54,19 @@ player has
   - list of permanent skills
   - list of skills in equipped spellbook
 
+- Gender:
+  - Male, Female, or Androgynous (49.5%, 49.5%, 1% chance respectively)
+  - Male stat bonuses:
+    - higher strength
+    - get more gold from quests? (salary bias)
+    - ??
+  - Female stat bonuses:
+    - higher HP (greater pain tolerance)
+    - better night vision
+    - slower metabolism (it's a good thing in a game!)
+  - Male and female characters pick two at random from their own columns.
+    Androgynous characters pick one from each.
+
 Commands:
 
 b - southwest
@@ -119,7 +132,7 @@ Bestiary (captital variants given):
  J
  K
  L 
- M 
+ M moss (Conwayan or otherwise)
  N
  O ooze
  P plant
@@ -163,7 +176,7 @@ Move just like their namesakes. Pawns always begin adjacent to a wall, walk to t
 
 Conwayans
 
-Oozes that breed according to the Game of Life. One move by the player always equals one of their ticks. The player is damaged whenever a conwayan tries to breed on the space where the player is standing. (This breeding attempt fails; therefore the player's presence disrupts the pattern.)
+Oozes or mosses that breed according to the Game of Life. One move by the player always equals one of their ticks. The player is damaged whenever a conwayan tries to breed on the space where the player is standing. (This breeding attempt fails; therefore the player's presence disrupts the pattern.)
 
  - The conwayans on a particular floor are driven by an invisible entity that tracks the player's speed and calculates the next arrangement for any given turn. Whenever the player moves, this appeals to the Life Engine, which does the following:
   -- Locate all conwayans present on the level

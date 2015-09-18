@@ -241,7 +241,6 @@ class HUD(object):
     def display(self):
         self.window.addstr(0,0, self.frame.format(self.session.PC))
         self.window.noutrefresh()
-        curses.doupdate() # lest HP counters update too late
 
 class Titlescreen(object):
 
@@ -317,7 +316,6 @@ def new_map_loop(session, map_screen, command=None):
         tick(session)
     while session.PC.running:
         new_map_loop(session, map_screen, command.lower())
-    map_screen.display(session.PC.floor)
     mode = 'mapnav'
 
 def view_loop(session, map_screen, command=None):
@@ -340,18 +338,13 @@ def view_loop(session, map_screen, command=None):
         map_screen.window.move(crosshairs[0], crosshairs[1])
         command = map_screen.window.getkey()
 
+    mode = 'mapnav'
+    curses.curs_set(0)
+
     if "\n" == command:
-        mode = 'mapnav'
-        curses.curs_set(0)
-        map_screen.display(session.PC.floor)
-        curses.doupdate
         return (crosshairs[0]+session.PC.floor.y_offset,
                 crosshairs[1]+session.PC.floor.x_offset)
     elif " " == command:
-        mode = 'mapnav'
-        curses.curs_set(0)
-        map_screen.window.display(session.PC.floor)
-        curses.doupdate
         return None
 
 def new_inventory_loop(session, hoard, inv, command):
@@ -382,13 +375,11 @@ def new_inventory_loop(session, hoard, inv, command):
             mode = 'mapnav'
             inv.hide()
             curses.panel.update_panels()
-            curses.doupdate()
             return None
         elif command.isalpha() and command.lower() in hoard.listing.keys():
             mode = 'mapnav'
             inv.hide()
             curses.panel.update_panels()
-            curses.doupdate()
             return hoard.listing[command.lower()]
         command = None
 
@@ -428,7 +419,6 @@ def title_screen_startup(title):
                                     longdesc="A well-balanced nutrition bar, marketed heavily towards adventurers.")
             testmonster = monsters.Zombie(flr=session.PC.floor, loc=(7,11))
             testmonster2 = monsters.Snake(flr=session.PC.floor, loc=(12,46))
-            #teststairs = objects.StairsDown(floor=session.PC.floor, location=(12,35))
             return session
         if "2" == command: # load game
             title.window.addstr(18,29, "File to load: ")
@@ -466,15 +456,11 @@ def runit(stdscr):
 
     thisgame = title_screen_startup(titlescreen)
     mode = 'mapnav'
-#    stdscr.clear()
 
     alerts = AlertQueue(thisgame)
     invent = InventoryMenu(thisgame)
     heads_up_display = HUD(thisgame)
     map_display = MapScreen(thisgame)
-#    curses.doupdate()
-
-#    stdscr.refresh()
 
     alerts.push("Hello Vanya, welcome to the Dungeons of Doom")
 
@@ -486,25 +472,21 @@ def runit(stdscr):
     message_panel = curses.panel.new_panel(alerts.window)
     inventory_panel = curses.panel.new_panel(invent.window)
 
-#    command = " "
     curses.curs_set(0)
     menu_flag = None
 
     # do these when first displaying the map
-    map_display.display(thisgame.PC.floor) # why is it blank at this point?
     map_panel.top()
-    heads_up_display.display()
-    alerts.shift()
-    # adding more map loops here just delays drawing
-
-#    curses.doupdate()
 
     while True:
 
         if 'mapnav' == mode:
+            # These four lines should be all that's needed to draw the map.
             map_display.display(thisgame.PC.floor)
             heads_up_display.display()
+            alerts.shift()
             curses.doupdate
+
             leave_map = new_map_loop(thisgame, map_display)
             if None == leave_map:
                 pass
@@ -522,8 +504,6 @@ def runit(stdscr):
                 newname = alerts.ask_player("Save game as (leave blank to overwrite):")
                 thisgame.save_game(savename=newname)
                 alerts.push("Game saved as %s." % thisgame.name)
-            alerts.shift()
-            heads_up_display.display() # could be removed?
 
         if 'view' == mode:
             alerts.push("Use movement keys to select a cell on the map. (Shift-move to go 5 squares.)")
@@ -538,8 +518,6 @@ def runit(stdscr):
                    thisgame.PC.floor.probe(leave_map).name,
                    str(leave_map)))
             mode = 'mapnav'
-            alerts.shift()
-            heads_up_display.display()
 
         elif 'inventory' == mode:
             alerts.window.clear()
@@ -578,9 +556,6 @@ def runit(stdscr):
                         map_display.display(thisgame.PC.floor)
                 tick(thisgame)
             ## end of added block
-            alerts.shift()
-            map_display.display(thisgame.PC.floor)
-            curses.doupdate
 
         elif 'title' == mode:
             title_panel.top()
@@ -589,9 +564,6 @@ def runit(stdscr):
 
             title_panel.hide()
             mode = 'mapnav'
-            heads_up_display.display()
-            alerts.shift()
-            curses.doupdate
 
 
 #curses.wrapper(runit)

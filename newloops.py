@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import objects, monsters, new_levelgen
-import curses, traceback, string, pickle, sys, random
+import curses, traceback, string, pickle, sys, random, collections
 import curses.panel
 import unittest
 
@@ -187,10 +187,9 @@ class Dialogue(object):
                 dialogueoption = "0"
 
 class AlertQueue(object):
-    # implement as a collection.deque later?
 
     def __init__(self, session):
-        self.messages = []
+        self.messages = collections.deque()
         self.window = curses.newwin(1, scr_x, 0, 0)
         self.session = session
 
@@ -201,16 +200,17 @@ class AlertQueue(object):
         self.messages.extend(objects.shouts)
         objects.shouts = []
         try:
-            message_to_show = self.messages.pop(0)
-            self.session.PC.running = False # kick the player out of running upon news
+            message_to_show = self.messages.popleft()
+            # kick the player out of running mode upon news
+            self.session.PC.running = False
         except IndexError:
             message_to_show = ""
-        if self.messages != []:
+        if len(self.messages) > 0:
             message_to_show = "%s [MORE]" % message_to_show
         self.window.clear()
         self.window.addstr(0,0, message_to_show)
         self.window.noutrefresh()
-        curses.doupdate()
+        curses.doupdate() # This one is critical
         while len(self.messages) > 0:
             scroll = self.window.getkey()
             if " " == scroll:
@@ -228,7 +228,7 @@ class AlertQueue(object):
         return response
 
     def vent(self):
-        while self.messages != []:
+        while len(self.messages) > 0:
             self.shift()
 
 class HUD(object):
@@ -485,7 +485,7 @@ def runit(stdscr):
             map_display.display(thisgame.PC.floor)
             heads_up_display.display()
             alerts.shift()
-            curses.doupdate
+            #curses.doupdate # the one in alerts.shift() covers it.
 
             leave_map = new_map_loop(thisgame, map_display)
             if None == leave_map:

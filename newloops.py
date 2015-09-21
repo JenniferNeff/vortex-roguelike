@@ -566,7 +566,5 @@ def runit(stdscr):
             mode = 'mapnav'
 
 
-#curses.wrapper(runit)
-
 if __name__ == '__main__':
     curses.wrapper(runit)

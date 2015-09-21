@@ -1,12 +1,24 @@
 Hello Rodney/Sailor/AFGNCAAP:
 
-Welcome to Vortex, a roguelike that takes place in a data center full of monsters! This game is still in development, but you can play around with it!
+Welcome to Vortex! You can start this roguelike by running newloops.py on the
+command line. It's a work in progress and I'm always adding little features one
+at a time, but you can walk around and interact with what's there. If you go
+up or down the stairs, you can admire the work of my level generator and the
+scrolling display.
+
+Other things to note are the relative movement speeds of the zombie and your
+character, and the snake's behavior at low health.
+
+Make sure your command line window is at least 80 x 24.
 
 Here are the commands currently supported:
 
 yku
 h l - These are your movement commands. Use Shift-[direction] to run.
 bjn
+
+> - Go downstairs
+< - Go upstairs
 
 i - Display the [inventory].
 I - [Invoke] (that is, use) an item from your inventory.
@@ -22,10 +34,11 @@ w - [wield or wear] an item in your inventory.
 r - [remove] an item that you are wearing.
 Space - Scroll through messages when prompted with "[MORE]"; Exit menus.
 
-s - [save] the game.
+s - [save] the game by pickling it. You can load it at the title screen.
 q - [quit] the game. You won't be prompted to save!
 
-Attack monsters by walking onto them. More complex ways of attacking with ranged weapons, etc. will be added later.
+Attack monsters by walking onto them. More complex ways of attacking with
+ranged weapons, etc. will be added later.
 
 Objects and items:
 
@@ -37,6 +50,8 @@ $     An item you can Invoke
 :     Food
 -|    Walls
 +     Door
+>     Downward staircase
+<     Upward staircase
 A-Z   Monsters
 
 Planned symbols:

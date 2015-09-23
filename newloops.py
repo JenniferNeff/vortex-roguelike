@@ -163,7 +163,7 @@ class Dialogue(object):
     '''
 
     def __init__(self, title, content, options):
-        self.window = curses.newwin(scr_y-1, scr_x, 1, 0)
+        self.window = curses.newwin(scr_y, scr_x, 0, 0)
         self.title = title
         self.content = content
         self.options = options
@@ -173,7 +173,11 @@ class Dialogue(object):
             self.options = ["Continue"]
         self.window.clear()
         self.window.addstr(1,1, self.title)
-        self.window.addstr(3,1, self.content)
+        if isinstance(self.content, str):
+            self.window.addstr(3,0, self.content)
+        elif isinstance(self.content, list):
+            for c in range(len(self.content)):
+                self.window.addstr(3+c,1, self.content[c])
 
         self.window.move(20-len(self.options),1)
         for i in range(len(self.options)):
@@ -391,6 +395,8 @@ def cutscene(title, content, options, command=None):
     cutscene_panel.top()
     cutscene_panel.show()
 
+
+
 def title_screen_startup(title):
     command = None
     while True:
@@ -425,17 +431,17 @@ def title_screen_startup(title):
             curses.echo()
             curses.curs_set(1)
             response = title.window.getstr()
-            curses.curs_set(0)
-            curses.noecho()
             try:
-                session = pickle.load(open(response, 'r'))
-                return session
+                return pickle.load(open(response, 'r'))
             except:
                 title.display()
                 curses.panel.update_panels()
                 title.window.addstr(18,29, "Couldn't load requested file.")
+                title.window.addstr(scr_y-1, 0, "")
         if "3" == command: # help
-            break
+            help_file = open('front_help.txt', 'r')
+            cutscene("Welcome to Vortex!", list(help_file) , None)
+            help_file.close()
         if "4" == command: # quit
             sys.exit()
         command = title.window.getkey()

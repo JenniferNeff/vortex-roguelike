@@ -1,0 +1,13 @@
+This is a roguelike where you can navigate a dungeon.
+
+                                        yku
+Use these keys to move in 8 directions: h l
+                                        bjn
+
+Fight monsters by walking into them.
+Pick up items by walking onto them and typing "t".
+Use them by typing "I", for Invoke.
+Walk up and down stairs with "<" and ">".
+Quit the game by typing "q".
+
+For more help, read readme.txt.

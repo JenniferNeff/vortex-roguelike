@@ -1,6 +1,6 @@
 Hello Rodney/Sailor/AFGNCAAP:
 
-Welcome to Vortex! You can start this roguelike by running newloops.py on the
+Welcome to Vortex! You can start this roguelike by running vortex.py on the
 command line. It's a work in progress and I'm always adding little features one
 at a time, but you can walk around and interact with what's there. If you go
 up or down the stairs, you can admire the work of my level generator and the

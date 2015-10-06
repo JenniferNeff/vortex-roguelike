@@ -19,12 +19,15 @@ import new_levelgen
 # Not sure if all this "language stuff" will actually get used or not.
 
 def smartcaps(sentence):
+    """Capitalize the first letter of a string, leaving the rest unchanged."""
     start = sentence[0]
     remainder = sentence[1:]
     return start.capitalize() + remainder
     
 
 def strike_notifs(sub, obj):
+    """Takes the subject and object of a sentence in which the subject hits
+    the object. Returns an appropriate sentence."""
 
     if isinstance(sub, Player):
         sub_name = "you"
@@ -44,9 +47,11 @@ def strike_notifs(sub, obj):
     return smartcaps(reply)
 
 def report(sentence):
+    """Add an object-generated message to the message queue"""
     shouts.append(smartcaps(sentence))
 
 class Entity(object):
+    """Class handling just about every "thing" in the game."""
 
     def __init__(self, name="Unknown entity", symbol=None, color=7,
                  description="You don't know about this yet",
@@ -111,17 +116,20 @@ class Entity(object):
         return self.symbol # there might be some better use for this
 
     def calc_stats(self):
+        """Caps the entity's HP and mana stats at the maximum values."""
         self.hp = min(self.hp, self.adjusted_stats["max HP"])
         self.mana = min(self.mana, self.adjusted_stats["max mana"])
 
-    def act(self): # all actions that "take one action" call this
+    def act(self):
+        """All actions that "take one action" call this.
+        Schedules the entity's next action, and performs any other
+        end-of-turn cleanup tasks.
+        """
         self.initiative += self.adjusted_stats["speed"]
         self.calc_stats()
 
     def traverse_test(self,y,x):
-        '''
-        "Is it possible to step onto the space I want to step on?"
-        '''
+        """Is it possible to step onto the space I want to step on?"""
         # wrangling this and the floors counterpart, at the moment
         dest = (self.location[0]+y, self.location[1]+x)
         if y == 0 or x == 0:
@@ -134,10 +142,10 @@ class Entity(object):
         return result
 
     def find_open(self, layer):
-        '''
+        """
         The entity searches for the nearest open space on which to drop an item
         when killed, or other similar purposes.
-        '''
+        """
         if 2 == layer:
             search_layer = self.floor.layer2
         elif 3 == layer:
@@ -173,12 +181,19 @@ class Entity(object):
                 else:
                     return target
 
-    # "If I attempt to step on this object, what happens?"
-    # walkon events should generally remove the player's "running" state
     def walkon(self, stomper):
+        """Specifies what happens if something tries to walk onto this entity.
+        Walkon events should generally remove the player's "running" state.
+        Takes the thing stepping on this entity as an argument.
+        """
         return None
 
     def attack(self, aim, implement=None):
+        """The basic attack routine.
+        Arguments:
+        aim -- the entity being attacked
+        implement -- an optional weapon being used (default: None)
+        """
         target = self.floor.layer3[aim]
         attack_roll = random.randint(0,self.adjusted_stats["accuracy"])
         defense_roll = random.randint(0,target.defense.setdefault('melee',0))
@@ -218,6 +233,7 @@ class Entity(object):
                            Bdef=target.def_article, Bname=target.name))
 
     def level_up(self):
+        """Allows this entity to gain a level."""
         if isinstance(self.level, int) and isinstance(self.hp_max, int):
             self.stats['level'] += 1
             hp_ratio = float(self.hp) / float(self.adjusted_stats['max HP'])
@@ -233,12 +249,16 @@ class Entity(object):
 class Door(Entity):
 
     def __init__(self, **kwargs):
+        """Initialize a door with its special traits. Doors are 'rookwise'
+        traversible, which means they cannot be traversed diagonally.
+        """
         Entity.__init__(self, name='door', traversible='rookwise', symbol="+",
                         **kwargs)
 
 class Player(Entity):
 
     def __init__(self, **kwargs):
+        """Initialize a player with its special traits."""
         Entity.__init__(self, symbol="@", level=1, traversible=False,
                         hp_max=50, mana_max=50, hp=50, mana=50, accuracy=80,
                         defense={'melee':80},

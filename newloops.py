@@ -6,24 +6,36 @@ import curses.panel
 import unittest
 
 # These are dummy values.
-# standard screen size is 80 x 24.
+# Standard screen size is 80 x 24; work default screen is a little smaller
+# Maybe put these in an option file later
 scr_x = 80
 scr_y = 22
 x_center = scr_x / 2
 y_center = scr_y / 2
 
-# Dummy values. These will be loaded from a file later, to better support
-# saving and loading partially-completed games.
-PC_position = (5,5) # 86, 11 to test - this is the player's starting position
-
 class Session(object):
+    """Contains the objects of a particular play-through of the game,
+    kept together in a single "session" so the game can be saved and loaded.
+    """
 
     def __init__(self, name):
+        """Initialize the session.
+
+        Arguments:
+        name -- the name of the session as a string
+
+        Also initializes:
+        self.PC -- the Player object for this play-through
+        self.world -- a dictionary of all the floors in this play-through.
+                      These in turn contain the other objects
+                      (monsters, NPCs, items)
+        """
         self.name = name
         self.PC = objects.Player(sess=self.name)
         self.world = {}
 
     def save_game(self, savename=""):
+        """Pickles the session."""
         if "" != savename:
             self.name = savename
             output = open(self.name, 'w')
@@ -43,6 +55,8 @@ compass = {
 }
 
 def tick(session):
+    """Advance the game clock by one tick."""
+    # Maybe this should be a Session method.
     for i in session.PC.floor.layer2.values():
         i.initiative -= 1
     for i in session.PC.floor.layer3.values():
@@ -50,11 +64,11 @@ def tick(session):
 
 
 def track(target):
-    '''
-    Figure out a reasonable slice of the map to display such that the PC
+    """Figures out a reasonable slice of the map to display such that the PC
     remains in the center of the screen, but the display never slips off
     the edges of the map.
-    '''
+    Returns the corners of the slice to display as a tuple.
+    """
     upperleft_x = target.location[1] - x_center
     upperleft_y = target.location[0] - y_center
     lowerright_x = upperleft_x + (scr_x-1)
@@ -73,7 +87,8 @@ def track(target):
         upperleft_y += 1
         lowerright_y += 1
 
-    # Printing these things breaks the display but is sometimes needed to test
+    # Printing these things breaks the display but was used for testing
+    # early on.
     #print (limit_y, limit_x)
     #print (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
 
@@ -84,15 +99,20 @@ def track(target):
 
 
 class MapScreen(object):
+    """Handles the curses window for the game map."""
 
     def __init__(self, session):
+        """Initialize the curses window for the game map.
+        This takes up the whole screen except for two lines:
+        the message line at the top and the HUD line at the bottom.
+        session -- the session this MapScreen belongs to
+        """
         self.window = curses.newwin((scr_y-2), scr_x, 1, 0)
         self.session = session
 
     def display(self, floor):
-        """
-        Updates the content of self.window, which is the map's curses window.
-        Data comes from the floor that is passed in.
+        """Updates the content of self.window, which is the map's curses
+        window. Data comes from the floor that is passed in.
         This is a window instead of a pad because the real processing happens
         in the layerN structures, and windows are easier to pass to panels.
         """
@@ -123,20 +143,29 @@ class MapScreen(object):
         self.window.noutrefresh()
 
 class InventoryMenu(object):
+    """Handles the curses window for the player's inventory."""
 
     def __init__(self, session):
+        """Initializes the inventory display.
+        session -- the session this menu belongs to
+        self.window -- covers whole screen except the message row
+        self.listing -- dictionary that will contain the items to show
+        """
         self.window = curses.newwin(scr_y-1, scr_x, 1, 0)
         self.listing = {}
         self.session = session
 
-    def display(self, hoard, query=None): # hoard usually = PC.inventory
+    def display(self, hoard, query="You are carrying:"):
+        """Updates the inventory menu display.
+        hoard -- the list of stuff in the inventory
+                 (this is usually the PC's inventory)
+        query -- a prompt for when it's not just a list of the player's stuff
+                 (ex: "Which item would you like to Invoke?")
+        """
         hoard.sort()
         self.window.clear()
         self.listing.clear()
-        if None == query:
-            self.window.addstr(1,1, "You are carrying:")
-        else:
-            self.window.addstr(1,1, query)
+        self.window.addstr(1,1, query)
 
         self.window.move(3,1)
         if 0 == len(hoard):
@@ -156,19 +185,27 @@ class InventoryMenu(object):
         self.window.noutrefresh()
 
 class Dialogue(object):
-    '''
-    Display a full screen with a title (like an item's name, or the name of
-    an NPC you are talking to) and some content, and then a set of choices
+    """Displays a full screen with a title (like an item's name, or the name
+    of an NPC you are talking to) and some content, and then a set of choices
     (dialogue options, choices for how to interact with an object, etc.)
-    '''
+    """
 
     def __init__(self, title, content, options):
+        """Initializes a single page of dialogue.
+        Arguments:
+        title -- a string
+        content -- a string or list of strings. These must already be
+                   properly formatted for the screen size, with manually
+                   placed line breaks.
+        options -- a list of options that the player can respond with
+        """
         self.window = curses.newwin(scr_y, scr_x, 0, 0)
         self.title = title
         self.content = content
         self.options = options
 
     def display(self):
+        """Updates the display for a page of dialogue."""
         if None == self.options:
             self.options = ["Continue"]
         self.window.clear()
@@ -191,16 +228,23 @@ class Dialogue(object):
                 dialogueoption = "0"
 
 class AlertQueue(object):
+    """Handles the message line at the top of the screen."""
 
     def __init__(self, session):
+        """Initialize the message queue for a particular session."""
         self.messages = collections.deque()
         self.window = curses.newwin(1, scr_x, 0, 0)
         self.session = session
 
     def push(self, message):
+        """Push a message onto the queue."""
         self.messages.append(message)
 
     def shift(self):
+        """Shift a message off the queue and show the player.
+        Adds a "[MORE]" tag if more messages are in the queue,
+        and waits for the player to respond before showing the next.
+        """
         self.messages.extend(objects.shouts)
         objects.shouts = []
         try:
@@ -221,6 +265,7 @@ class AlertQueue(object):
                 self.shift()
 
     def ask_player(self, query):
+        """Ask the player for input via the message line."""
         self.window.clear()
         self.window.addstr(0,0, query)
         self.window.addstr(" ")
@@ -232,26 +277,33 @@ class AlertQueue(object):
         return response
 
     def vent(self):
+        """Shift all messages off the queue for perusal."""
         while len(self.messages) > 0:
             self.shift()
 
 class HUD(object):
+    """Handles the status bar at the bottom of the screen."""
 
     def __init__(self, session):
+        """Initialize the HUD for a particular session."""
         self.window = curses.newwin(1, scr_x, scr_y-1, 0)
         self.frame = "Level: {0.stats[level]}   HP: {0.hp}   Mana: {0.mana} {0.hungry} | Depth: {0.floor.depth}"
         self.session = session
 
     def display(self):
+        """Update the HUD display."""
         self.window.addstr(0,0, self.frame.format(self.session.PC))
         self.window.noutrefresh()
 
 class Titlescreen(object):
+    """Handles the title screen at the beginning of the game."""
 
     def __init__(self):
+        """Initialize the title screen as a window taking the whole screen."""
         self.window = curses.newwin(scr_y, scr_x, 0, 0)
 
     def display(self):
+        """Update the title screen display."""
         splash = open("titlescreen.vortex", 'r')
         try:
             self.window.addstr(0,0, splash.read())
@@ -260,17 +312,19 @@ class Titlescreen(object):
         splash.close()
 
 def check_command(win,c):
+    """Get a single-stroke command from the player.
+    c -- an optional override
+    """
     if None == c:
         return win.getkey()
     else:
         return c
 
 def new_map_loop(session, map_screen, command=None):
-    '''
-    Move the player around on the map, and perform simple actions (anything
-    that can be accomplished by calling PC.foo(bar) and won't kick the game out
-    of map mode). More complex actions are returned back to the main loop.
-    '''
+    """Move the player around on the map, and perform simple actions
+    (anything that can be accomplished by calling PC.foo(bar) and won't
+    kick the game out of map mode).
+    """
     command = check_command(map_screen.window, command)
     if command in compass.keys():
         session.PC.move(compass[command][0], compass[command][1])
@@ -281,6 +335,7 @@ def new_map_loop(session, map_screen, command=None):
         session.PC.take()
     elif "." == command:
         session.PC.rest()
+    # The stairs code is redundant; fix later
     elif ">" == command:
         send_player_to = session.PC.descend()
         try:
@@ -323,6 +378,11 @@ def new_map_loop(session, map_screen, command=None):
     mode = 'mapnav'
 
 def view_loop(session, map_screen, command=None):
+    """Allows the player to select a space on the map for information.
+    Arguments:
+    map_screen -- the MapScreen object to be examined
+    command -- player-entered command to select or cancel
+    """
     curses.curs_set(2)
     crosshairs = [y_center, x_center]
     map_screen.window.move(crosshairs[0], crosshairs[1])
@@ -352,6 +412,13 @@ def view_loop(session, map_screen, command=None):
         return None
 
 def new_inventory_loop(session, hoard, inv, command):
+    """Handles viewing of the inventory.
+    Arguments:
+    session -- this session
+    hoard -- the list of items to be displayed
+    inv -- 
+    command -- player-entered command to select an item or cancel
+    """
     if 'i' == command:
         query = "You are carrying:"
     elif 'I' == command:
@@ -388,6 +455,13 @@ def new_inventory_loop(session, hoard, inv, command):
         command = None
 
 def cutscene(title, content, options, command=None):
+    """Creates and displays a new Dialogue object.
+    Arguments:
+    title -- the title of the dialogue page
+    content -- a string or list of strings
+    options -- a list of options for the player to select
+    command -- the player's selection
+    """
     cut = Dialogue(title, content, options)
     cutscene_panel = curses.panel.new_panel(cut.window)
     cut.display()
@@ -395,9 +469,8 @@ def cutscene(title, content, options, command=None):
     cutscene_panel.top()
     cutscene_panel.show()
 
-
-
 def title_screen_startup(title):
+    """Handles the title screen at the beginning of the game."""
     command = None
     while True:
         title.display()
@@ -412,7 +485,7 @@ def title_screen_startup(title):
             #test.populate() # this is in the Floor.__init__ function now
 
             session.PC.floor = test
-            session.PC.location = PC_position
+            session.PC.location = (5,5)
             test.layer3[session.PC.location] = session.PC
             testitem = objects.Item(floor=session.PC.floor, location=(6,10),
                                     name="Nondescript item", symbol='$')
@@ -455,6 +528,9 @@ def title_screen_startup(title):
 
 
 def runit(stdscr):
+    """Runs the game, establishing all required windows and loops for the
+    different modes of the game.
+    """
 
     # Initialize title screen.
     titlescreen = Titlescreen()

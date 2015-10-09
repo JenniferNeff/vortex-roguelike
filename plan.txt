@@ -31,6 +31,16 @@ Every object has:
    - what does it do when used?
    - how many times can it be used?
 
+Cutscenes:
+ - How to store these?
+ - Probably as "pages", analogous to pages in a CYOA book, with one helping
+   of text and its accompanying options, each of which leads to a new "page",
+   or cancels
+ - One "cutscene" really needs only store its first page
+   (it's the root of a tree)
+   ...unless some conditional gives it a possibility of having one of a few
+      as the first page
+
 player has
 
 - Gear slots:

@@ -286,7 +286,8 @@ class Player(Entity):
 
         self.skills = {}
 
-    def act(self): # all actions that "take one action" call this
+    def act(self):
+        """All actions that "take one action" call this."""
         #if random.randint(1,100) < 30:
         if True: # for testing
             self.hunger += 1
@@ -419,6 +420,7 @@ class Player(Entity):
         self.hp = 50
 
     def descend(self):
+        """Move the player down a flight of stairs."""
         try:
             the_stairs = self.floor.layer2[self.location]
             if isinstance(the_stairs, StairsDown):
@@ -431,6 +433,8 @@ class Player(Entity):
             return None
 
     def ascend(self):
+        """Move the player up a flight of stairs."""
+        # Could maybe combine these into one
         try:
             the_stairs = self.floor.layer2[self.location]
             if isinstance(the_stairs, StairsUp):
@@ -451,10 +455,12 @@ It has infinite charges, so try Invoking it.
 class Item(Entity):
 
     def __init__(self, equip_slot=None, cursed=False, **kwargs):
+        """Initialize an Item, which encompasses any Entity that can be
+        picked up, dropped, and placed in inventories.
+        """
         Entity.__init__(self, layer=2, # placeholder
           traversible=True, can_be_taken=True,
           **kwargs)
-          # how to pass in more arguments properly??
         self.equip_slot = equip_slot
         self.cursed = cursed
         try:
@@ -466,23 +472,32 @@ class Item(Entity):
             self.equip_action = "wear"
 
     def walkon(self, stomper):
+        """Items react to being stepped on by reporting what they are."""
         if isinstance(stomper, Player):
             report("You are standing on {obj.indef_article}{obj.name}.".format(obj=self))
             stomper.running = False
 
     def use(self, user):
+        """Many items can be Invoked to perform some effect."""
         user.level_up()
 
     # The when_*() functions return False when that action fails, and True
     # when it succeeds. They should also contain all related reports.
 
     def when_taken(self):
+        """An item might do something special when picked up."""
         pass
 
     def when_dropped(self):
+        """An item might do something special when dropped."""
         pass
 
     def when_equipped(self, user):
+        """An item might do something special when equipped.
+        The act of wearing the item should trigger the stat update,
+        because it takes a turn. So all this needs to do, usually, is 
+        report success or failure.
+        """
         if None == self.equip_slot:
             report("You can't {obj.equip_action} that.".format(obj=self))
             return False
@@ -496,6 +511,11 @@ class Item(Entity):
             return True
 
     def when_removed(self, user):
+        """An item might do something special when equipped.
+        The act of wearing the item should trigger the stat update,
+        because it takes a turn. So all this needs to do, usually, is 
+        report success or failure.
+        """
         if self not in user.equipped.values():
             report("You're not {obj.equip_action}ing {obj.def_article}{obj.name}.".format(obj=self))
             return False
@@ -526,6 +546,12 @@ class Food(Item):
         Item.__init__(self, #layer=2, # placeholder
           symbol=":", #equip_slot=None, cursed=False,
           **kwargs)
+        """Initialize a food item. Game is tuned so that real-world
+        calorie counts can be used as a reference.
+        calories -- determines how much hunger the food satisfies.
+        caffeine -- determines how much mana the food restores.
+        healthy -- if true, provides some other benefit
+        """
 
         self.calories = calories
         self.caffeine = caffeine
@@ -542,11 +568,13 @@ class Food(Item):
             user.act()
 
 class Spellbook(Item):
+    """A system for learning skills. Not implemented yet."""
     pass
 
 class StairsDown(Entity):
 
     def __init__(self, destination=1, **kwargs):
+        """Initialize a downward stairway."""
         Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
                         symbol=">", name="descending stairway", **kwargs)
         self.destination = destination
@@ -554,6 +582,7 @@ class StairsDown(Entity):
 class StairsUp(Entity):
 
     def __init__(self, destination=1, **kwargs):
+        """Initialize an upward stairway."""
         Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
                         symbol="<", name="ascending stairway",
                         indef_article="an ", **kwargs)
@@ -562,6 +591,11 @@ class StairsUp(Entity):
 class Monster(Entity):
 
     def __init__(self, scared_at=0, brave_at=90, **kwargs):
+        """Initialize a monster.
+        scared_at -- at what HP% will it become afraid?
+        brave_at -- at what HP% will it lose scared status?
+        scared -- is the monster scared (usually means it flees)?
+        """
         Entity.__init__(self, layer=3,
           traversible=False,
           can_be_taken=False,
@@ -571,6 +605,7 @@ class Monster(Entity):
         self.scared = False
 
     def move(self, y, x):
+        """Movement, for monsters."""
         source = self.location
         dest = (self.location[0]+y, self.location[1]+x)
         # These lines still here to allow monsters to set off traps.
@@ -587,11 +622,10 @@ class Monster(Entity):
             self.floor.layer3[dest] = self
 
     def pursue(self, y, x, flee=1): # y, x are the coordinates to chase
-        '''
-        The creature chases after the given coordinates (y,x)--usually the
-        player's location. Pass flee=-1 to this method to make the monster
-        run away from that point instead.
-        '''
+        """The creature chases after the given coordinates (y,x)--usually
+        the player's location. Pass flee=-1 to this method to make the
+        monster run away from that point instead.
+        """
         moveY = 0
         moveX = 0
         if y < self.location[0]:
@@ -623,9 +657,7 @@ class Monster(Entity):
             self.move(moveY-edgeflee, 0)
 
     def wander(self):
-        '''
-        A movement behavior for stupid, confused, and blind monsters.
-        '''
+        """A movement behavior for stupid, confused, and blind monsters."""
         moveY = random.choice((-1,0,1))
         moveX = random.choice((-1,0,1))
 
@@ -633,6 +665,9 @@ class Monster(Entity):
             self.move(moveY, moveX)
 
     def check_adjacency(self, victim):
+        """The monster checks whether it is close to something it wants
+        to attack.
+        """
         cells = [(y,x) for y in (-1,0,1) for x in (-1,0,1) \
                  if not (y == 0 and x == 0)]
         rookcells = [(y,x) for y in (-1,0,1) for x in (-1,0,1) \
@@ -650,12 +685,13 @@ class Monster(Entity):
         return None
 
     def AI_melee_brute(self, adventurer):
-        '''
-        AI for a monster that uses only melee strikes, and flees at low health.
-        The explicit use of self.attack() guarantees that monsters stand still
-        and attack when diagonally adjacent to a target rather than trying to
-        edge over to a squarely adjacent position.
-        '''
+        """AI for a monster that uses only melee strikes, and flees at
+        low health. The explicit use of self.attack() guarantees that
+        monsters stand still and attack when diagonally adjacent to a
+        target rather than trying to edge over to a squarely adjacent
+        position.
+        """
+        # do nothing when the player is on a different floor
         if adventurer.floor != self.floor:
             return
 
@@ -677,15 +713,17 @@ class Monster(Entity):
                 self.pursue(adventurer.location[0], adventurer.location[1])
 
     def act(self, adventurer):
-        '''
-        This is where the creature decides what to do on its turn:
+        """This is where the creature decides what to do on its turn:
         a long list of elifs, each of which calls a different other method.
-        '''
+        """
         self.AI_melee_brute(adventurer)
         self.initiative += self.adjusted_stats["speed"]
         #report("DEBUG: %s taking a turn." % self.name)
 
     def walkon(self, stomper):
+        """When the player tries to "walk onto" the monster, they attack
+        the monster.
+        """
         if isinstance(stomper, Player):
             try:
                 stomper.attack(self.location,
@@ -701,6 +739,9 @@ class Monster(Entity):
     # ...or is otherwise constrained rook/bishop/pawn style
 
     def perish(self, murderer=None):
+        """When the monster dies, it deletes itself from the world,
+        reports its death, and grants its killer XP.
+        """
         self.drop_loot()
         del self.floor.layer3[self.location]
         self.location = None
@@ -712,6 +753,7 @@ class Monster(Entity):
         murderer.xp += self.xp # Make this more complex later.
 
     def drop_loot(self):
+        """If a monster drops loot when killed, use this."""
         for item in self.inventory:
             dropzone = self.find_open(2)
             self.floor.layer2[dropzone] = item
@@ -721,6 +763,18 @@ class Floor(object):
 
     def __init__(self, name="Unknown Location", depth=0, sess=None,
                  screen_x=80, screen_y=22):
+        """Initialize a floor, or level, of the dungeon.
+        Variables:
+        name -- the name given to this level
+        depth -- the floor's depth in the dungeon
+        sess -- the game session to which the floor belongs
+
+        Other traits:
+        self.layer1 -- contains the static floor and walls
+        self.layer2 -- contains objects
+        self.layer3 -- contains the player and moving monsters
+         (thus the player can stand over an object that is on the floor)
+        """
         self.name = name
         self.depth = depth
         self.filename = "{n}_{dep}.map".format(n=self.name, dep=depth)
@@ -742,10 +796,10 @@ class Floor(object):
         self.load_map()
 
     def load_map(self):
-        '''
-        Build layer 1 of a map from a text file. A border of void is added to
-        each side; this prevents errors when fleeing monsters reach the edge.
-        '''
+        """Build layer 1 of a map from a text file. A border of void
+        is added to each side; this prevents errors when fleeing
+        monsters reach the edge.
+        """
         self.empty_tiles = []
         self.doors = []
         try:
@@ -797,26 +851,25 @@ class Floor(object):
 
         self.session.world[self.name] = self
 
+        # Collapse these into self.populate()
         self.up = self.random_tile()
         self.down = self.random_tile()
 
         self.populate()
 
     def random_tile(self):
-        """
-        Return a random tile of empty floor. Intended to be used only at
-        initialization, as it does not reset.
+        """Return a random tile of empty floor. Intended to be used
+        only at initialization, as it does not reset.
         """
         return self.empty_tiles.pop()
 
     def populate(self):
+        """Put the randomly-generated entities on the map."""
         self.layer2[self.up] = StairsUp(floor=self, location=self.up)
         self.layer2[self.down] = StairsDown(floor=self, location=self.down)
 
     def probe(self, coordinates):
-        """
-        Return whatever object is visible on the map at that location.
-        """
+        """Return whatever object is visible on the map at that location."""
         if coordinates in self.layer3.keys():
             return self.layer3[coordinates]
         elif coordinates in self.layer2.keys():
@@ -825,9 +878,7 @@ class Floor(object):
             return self.layer1[coordinates[0]][coordinates[1]]
 
     def traverse_test(self, coordinates, moving_rookwise=False):
-        '''
-        "Is it possible for an entity to walk onto the given tile?"
-        '''
+        """Is it possible for an entity to walk onto the given tile?"""
         try:
             if not self.layer3[coordinates].traversible:
                 return False
@@ -850,18 +901,22 @@ class Floor(object):
 
         
 def make_floor():
+    """Generate one floor tile."""
     return Entity(name="bare floor", indef_article="", symbol=".",
                   description="Bare floor.")
 
 def make_passage():
+    """Generate one passage tile."""
     return Entity(name="passage", symbol="#", traversible='rookwise',
                   description="A dungeon passage.")
 
 def make_wall(side="-"):
+    """Generate one wall tile."""
     return Entity(name="wall", symbol=side, description="A wall.", opaque=True,
                   traversible=False)
 
 def make_void():
+    """Generate one void tile."""
     return Entity(symbol=" ", description="There's nothing there.",
                   traversible=False)
 

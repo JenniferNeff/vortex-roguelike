@@ -52,6 +52,8 @@ def report(sentence):
 
 class Entity(object):
     """Class handling just about every "thing" in the game."""
+    # Goal: make long descriptions Dialogue screens.
+    # will probably have to move Dialogue into this file.
 
     def __init__(self, name="Unknown entity", symbol=None, color=7,
                  description="You don't know about this yet",

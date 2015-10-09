@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import objects, monsters, new_levelgen
-import curses, traceback, string, pickle, sys, random, collections
+import curses, traceback, string, pickle, sys, random, collections, textwrap
 import curses.panel
 import unittest
 
@@ -185,24 +185,30 @@ class InventoryMenu(object):
         self.window.noutrefresh()
 
 class Dialogue(object):
-    """Displays a full screen with a title (like an item's name, or the name
-    of an NPC you are talking to) and some content, and then a set of choices
-    (dialogue options, choices for how to interact with an object, etc.)
+    """Displays a full screen with a title (like an item's name, or
+    the name of an NPC you are talking to) and some content, and then
+    a set of choices (dialogue options, choices for how to interact
+    with an object, etc.)
     """
 
-    def __init__(self, title, content, options):
+    def __init__(self, title, content, options, branches=None):
         """Initializes a single page of dialogue.
         Arguments:
         title -- a string
-        content -- a string or list of strings. These must already be
-                   properly formatted for the screen size, with manually
-                   placed line breaks.
+        content -- can be a string, which will be converted to textwrapped
+                   lines when initialized, or a pre-made list of strings.
         options -- a list of options that the player can respond with
+        branches -- a list of functions that the corresponding options
+                    will trigger. Can be Invocations, commands to
+                    display other Dialogue pages, etc.
         """
         self.window = curses.newwin(scr_y, scr_x, 0, 0)
         self.title = title
+        if isinstance(content, str):
+            content = textwrap.wrap(content)
         self.content = content
         self.options = options
+        self.branches = branches
 
     def display(self):
         """Updates the display for a page of dialogue."""
@@ -210,22 +216,24 @@ class Dialogue(object):
             self.options = ["Continue"]
         self.window.clear()
         self.window.addstr(1,1, self.title)
-        if isinstance(self.content, str):
-            self.window.addstr(3,0, self.content)
-        elif isinstance(self.content, list):
-            for c in range(len(self.content)):
-                self.window.addstr(3+c,1, self.content[c])
+        for c in range(len(self.content)):
+            self.window.addstr(3+c,1, self.content[c])
 
         self.window.move(20-len(self.options),1)
         for i in range(len(self.options)):
             self.window.addstr("%s: %s" % (i+1, self.options[i]))
         self.window.noutrefresh()
         curses.doupdate()
-        dialogueoption = "0"
+        dialogueoption = 0
         while not int(dialogueoption)-1 in range(len(self.options)):
             dialogueoption = self.window.getkey()
             if not dialogueoption.isdigit():
-                dialogueoption = "0"
+                dialogueoption = -1
+            else:
+                dialogueoption = int(dialogueoption)
+        if self.branches != None:
+            self.branches[dialogueoption - 1]
+        
 
 class AlertQueue(object):
     """Handles the message line at the top of the screen."""
@@ -462,12 +470,13 @@ def cutscene(title, content, options, command=None):
     options -- a list of options for the player to select
     command -- the player's selection
     """
+    # Redundant with existing Dialogue object.
     cut = Dialogue(title, content, options)
     cutscene_panel = curses.panel.new_panel(cut.window)
     cut.display()
-    curses.panel.update_panels()
-    cutscene_panel.top()
-    cutscene_panel.show()
+    #curses.panel.update_panels()
+    #cutscene_panel.top()
+    #cutscene_panel.show()
 
 def title_screen_startup(title):
     """Handles the title screen at the beginning of the game."""
@@ -491,6 +500,8 @@ def title_screen_startup(title):
                                     name="Nondescript item", symbol='$')
             testweapon = objects.Item(floor=session.PC.floor, location=(4,16),
                                       equip_slot='melee weapon',
+                                      description="A basic steel sword.",
+                                      longdesc="There's absolutely nothing special about this sword. Probably the last idiot who came in here dropped it when they got killed.",
                                       name="Basic Sword", symbol='/')
             testfood = objects.Food(floor=session.PC.floor, location=(5,20),
                                     name="Mesa Bar",
@@ -513,7 +524,9 @@ def title_screen_startup(title):
                 title.window.addstr(scr_y-1, 0, "")
         if "3" == command: # help
             help_file = open('front_help.txt', 'r')
-            cutscene("Welcome to Vortex!", list(help_file) , None)
+            help_screen = Dialogue("Welcome to Vortex!", list(help_file), None)
+            help_screen.display()
+            #cutscene("Welcome to Vortex!", list(help_file) , None)
             help_file.close()
         if "4" == command: # quit
             sys.exit()

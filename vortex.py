@@ -4,6 +4,7 @@ import objects, monsters, new_levelgen
 import curses, traceback, string, pickle, sys, random, collections, textwrap
 import curses.panel
 import unittest
+import startup_cutscene
 
 # These are dummy values.
 # Standard screen size is 80 x 24; work default screen is a little smaller
@@ -207,13 +208,13 @@ class Dialogue(object):
         if isinstance(content, str):
             content = textwrap.wrap(content)
         self.content = content
+        if None == options:
+            options = ["Continue"]
         self.options = options
         self.branches = branches
 
     def display(self):
         """Updates the display for a page of dialogue."""
-        if None == self.options:
-            self.options = ["Continue"]
         self.window.clear()
         self.window.addstr(1,1, self.title)
         for c in range(len(self.content)):
@@ -224,15 +225,6 @@ class Dialogue(object):
             self.window.addstr("%s: %s" % (i+1, self.options[i]))
         self.window.noutrefresh()
         curses.doupdate()
-        dialogueoption = 0
-        while not int(dialogueoption)-1 in range(len(self.options)):
-            dialogueoption = self.window.getkey()
-            if not dialogueoption.isdigit():
-                dialogueoption = -1
-            else:
-                dialogueoption = int(dialogueoption)
-        if self.branches != None:
-            self.branches[dialogueoption - 1]
         
 
 class AlertQueue(object):
@@ -462,21 +454,29 @@ def new_inventory_loop(session, hoard, inv, command):
             return hoard.listing[command.lower()]
         command = None
 
-def cutscene(title, content, options, command=None):
+def cutscene(page, command=None):
     """Creates and displays a new Dialogue object.
     Arguments:
+    page -- a Dialogue object
     title -- the title of the dialogue page
     content -- a string or list of strings
     options -- a list of options for the player to select
     command -- the player's selection
     """
-    # Redundant with existing Dialogue object.
-    cut = Dialogue(title, content, options)
-    cutscene_panel = curses.panel.new_panel(cut.window)
-    cut.display()
-    #curses.panel.update_panels()
-    #cutscene_panel.top()
-    #cutscene_panel.show()
+    cutscene_panel = curses.panel.new_panel(page.window)
+    dialogueoption = 0
+    while not int(dialogueoption)-1 in range(len(page.options)):
+        page.display()
+        dialogueoption = page.window.getkey()
+        if not dialogueoption.isdigit():
+            dialogueoption = -1
+        else:
+            dialogueoption = int(dialogueoption)
+            if page.branches != None:
+                if isinstance(page.branches[dialogueoption - 1], Dialogue):
+                    page = page.branches[dialogueoption - 1]
+                    dialogueoption = 0
+    
 
 def title_screen_startup(title):
     """Handles the title screen at the beginning of the game."""
@@ -486,6 +486,15 @@ def title_screen_startup(title):
         curses.panel.update_panels()
         curses.doupdate()
         if "1" == command: # new game
+            page_two = Dialogue(title="And you are?...",
+                                content=startup_cutscene.content_two,
+                                options=None)
+            page_one = Dialogue(title="Silicon Valley Times, 10/31/2015",
+                                content=startup_cutscene.content_one,
+                                options=["Read more..."],
+                                branches=[page_two])
+
+            cutscene(page_one, None) # comment out if borked
             session = Session("awesome")
             test = objects.Floor(name="testmap", sess=session,
                                  screen_x=scr_x, screen_y=scr_y)
@@ -497,7 +506,8 @@ def title_screen_startup(title):
             session.PC.location = (5,5)
             test.layer3[session.PC.location] = session.PC
             testitem = objects.Item(floor=session.PC.floor, location=(6,10),
-                                    name="Nondescript item", symbol='$')
+                                    name="Nondescript item", symbol='$',
+                                    longdesc="This looks like nothing special, but maybe you can Invoke it.")
             testweapon = objects.Item(floor=session.PC.floor, location=(4,16),
                                       equip_slot='melee weapon',
                                       description="A basic steel sword.",
@@ -525,9 +535,8 @@ def title_screen_startup(title):
         if "3" == command: # help
             help_file = open('front_help.txt', 'r')
             help_screen = Dialogue("Welcome to Vortex!", list(help_file), None)
-            help_screen.display()
-            #cutscene("Welcome to Vortex!", list(help_file) , None)
             help_file.close()
+            cutscene(help_screen, None)
         if "4" == command: # quit
             sys.exit()
         command = title.window.getkey()
@@ -629,11 +638,13 @@ def runit(stdscr):
                     alerts.push(returned_item.description)
                 elif 'E' == menu_flag:
                     if None != returned_item.longdesc:
-                        cutscene(returned_item.name, returned_item.longdesc,
-                                 None)
+                        cutscene(Dialogue(title=returned_item.name,
+                                          content=returned_item.longdesc,
+                                          options=None))
                     else:
-                        cutscene(returned_item.name, returned_item.description,
-                                 None)
+                        cutscene(Dialogue(title=returned_item.name,
+                                          content=returned_item.description,
+                                          options=None))
                 elif 'w' == menu_flag:
                     thisgame.PC.wield_or_wear(returned_item)
                 elif 'r' == menu_flag:

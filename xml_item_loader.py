@@ -27,6 +27,7 @@ for i in tree.findall('item'):
                                                         sys.argv[1]))
 
 output = """#!/usr/bin/python
+import random
 import objects
 all_the_things = {{
 {0}

@@ -517,7 +517,7 @@ def title_screen_startup(title):
             test.layer3[session.PC.location] = session.PC
             session.PC.floor.spawn(item_dict["testitem"], (6,10))
             session.PC.floor.spawn(item_dict["testweapon"], (4,16))
-            session.PC.floor.spawn(food_dict["testfood"], (5,20))
+            session.PC.floor.spawn(food_dict["mesa1"], (5,20))
             session.PC.floor.spawn(mons_dict["zombie1"], (7,11))
             session.PC.floor.spawn(mons_dict["snake1"], (12,46))
             return session

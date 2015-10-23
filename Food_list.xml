@@ -5,11 +5,11 @@
 <all_items>
 <item>
 
-<key>"testfood"</key>
+<key>"mesa1"</key>
 <name>"Mesa Bar"</name>
 <color></color>
 <description>"A chewy energy bar."</description>
-<longdesc>"A well-balanced nutrition bar, marketed heavily towards adventurers."</longdesc>
+<longdesc>"A well-balanced, chewy energy bar, marketed heavily towards adventurers. Its use of whole rolled oats gives it a chunky texture. " + random.choice(("Also contains large amounts of peanut butter.", "Chocolate chunks are visible between the oats.", "Contains a mixture of whole nuts and seeds.", "This one has dried blueberries in it.", "It's a dark chocoloate brown, possibly trying a little too hard to be a brownie."))</longdesc>
 <def_article></def_article>
 <indef_article></indef_article>
 <xp></xp>
@@ -31,9 +31,346 @@
 <sess></sess>
 <gender></gender>
 <equip_slot></equip_slot>
-<calories></calories>
-<caffeine></caffeine>
-<healthy></healthy>
+<calories>300</calories>
+<caffeine>0</caffeine>
+<healthy>True</healthy>
+
+</item>
+
+<item>
+
+<key>"mesa2"</key>
+<name>"Black Mesa Bar"</name>
+<color></color>
+<description>"A chewy energy bar with caffeine in it."</description>
+<longdesc>"A well-balanced, chewy energy bar, marketed heavily towards adventurers. It's just like a normal Mesa Bar, but this flavor is caffeinated. " + random.choice(("You think you can see bits of espresso bean in it.", "It's chocolate, and white mint icing is drizzled over the top."))</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>300</calories>
+<caffeine>100</caffeine>
+<healthy>True</healthy>
+
+</item>
+
+<item>
+
+<key>"tea1"</key>
+<name>"cup of green tea"</name>
+<color></color>
+<description>"A hot covered cup of green tea."</description>
+<longdesc>"This hot cup of green tea steams slightly when the lid is opened. It smells a little bitter."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>0</calories>
+<caffeine>100</caffeine>
+<healthy>True</healthy>
+
+</item>
+
+<item>
+
+<key>"tea2"</key>
+<name>"cup of black tea"</name>
+<color></color>
+<description>"A hot covered cup of black tea."</description>
+<longdesc>"This hot cup of black tea steams slightly when the lid is opened. A cursory taste confirms it has a bit of sugar in it."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>0</calories>
+<caffeine>100</caffeine>
+<healthy>True</healthy>
+
+</item>
+
+<item>
+
+<key>"tea3"</key>
+<name>"bottle of iced tea"</name>
+<color></color>
+<description>"A cold bottle of iced tea."</description>
+<longdesc>"The label on this bottle of tea proclaims its environmental friendliness and lack of any artifical ingredients. The ingredients list reveals that it contains a rather ridiculous amount of sugar."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>20</calories>
+<caffeine>100</caffeine>
+<healthy>False</healthy>
+
+</item>
+
+<item>
+
+<key>"coffee1"</key>
+<name>"cup of black coffee"</name>
+<color></color>
+<description>"A hot covered cup of black coffee."</description>
+<longdesc>"This hot cup of black coffee steams slightly when the lid is opened. Its aroma permeates the air."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>0</calories>
+<caffeine>150</caffeine>
+<healthy>False</healthy>
+
+</item>
+
+<item>
+
+<key>"coffee2"</key>
+<name>"Latteccino"</name>
+<color></color>
+<description>"A hot covered cup of coffee with milk and syrup."</description>
+<longdesc>"A hot cup of coffee, mixed with milk and sweeteners and covered with a layer of whipped cream. It smells faintly of " + random.choice(("vanilla.", "hazelnuts.", "caramel.", "pumpkin pie spices.", "chocolate."))</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>200</calories>
+<caffeine>150</caffeine>
+<healthy>False</healthy>
+
+</item>
+
+<item>
+
+<key>"coffee2"</key>
+<name>"Iced Latteccino"</name>
+<color></color>
+<description>"A cold covered cup of coffee with milk and syrup."</description>
+<longdesc>"A cold cup of coffee, mixed with milk and sweeteners and covered with a layer of whipped cream. It smells faintly of " + random.choice(("vanilla.", "hazelnuts.", "caramel.", "pumpkin pie spices.", "chocolate."))</longdesc>
+<def_article></def_article>
+<indef_article>"an "</indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>200</calories>
+<caffeine>150</caffeine>
+<healthy>False</healthy>
+
+</item>
+<item>
+
+<key>"pizza1"</key>
+<name>"slice of cold pizza"</name>
+<color></color>
+<description>"A slice of cold pizza."</description>
+<longdesc>"A slice of pizza from last night, or perhaps earlier, topped with " + random.choice(("pepperoni.", "a variety of vegetables.", "chicken and barbeque sauce.", "ham and pineapple.", "curried chicken and vegetables."))</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>260</calories>
+<caffeine>0</caffeine>
+<healthy>False</healthy>
+
+</item>
+<item>
+
+<key>"candy1"</key>
+<name>"chocolate covered espresso beans"</name>
+<color></color>
+<description>"A handful of chocolate-covered coffee beans."</description>
+<longdesc>"A strong scent of coffee emanates from these chocolate-covered candies. Some of them are in stuck-together pairs."</longdesc>
+<def_article></def_article>
+<indef_article>"some "</indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>200</calories>
+<caffeine>250</caffeine>
+<healthy>False</healthy>
+
+</item>
+<item>
+
+<key>"sandwich1"</key>
+<name>"sub sandwich"</name>
+<color></color>
+<description>"A footlong sandwich on a roll."</description>
+<longdesc>"This sandwich is conveniently wrapped in waxed paper, and the inside is layered with a few kinds of thinly-sliced meat and vegetables."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>700</calories>
+<caffeine>0</caffeine>
+<healthy>True</healthy>
 
 </item>
 <!--

@@ -129,7 +129,7 @@ Items and objects:
  > stairs down
  < stairs up
 
-Bestiary (captital variants given):
+Bestiary (capital variants given):
  A 
  B beast
  C cyborg

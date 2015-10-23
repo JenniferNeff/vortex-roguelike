@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import random
 import objects
 all_the_things = {
 "item1": objects.Item(key="item1",name="Unknown entity",symbol="$",color=7,description="You don't know about this, yet",longdesc="You don't know about this yet, longer",def_article="the ",indef_article="a ",xp=0,defense={},attacks={},speed=60,accuracy=100,hidden=False,inventory=[]),

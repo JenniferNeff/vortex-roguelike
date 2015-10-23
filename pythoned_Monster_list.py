@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import random
 import objects
 all_the_things = {
 "zombie1": objects.Monster(key="zombie1",name="Zombie",symbol="Z",description="Your basic shambling zombie. \"Brains!\"",longdesc="This decaying corpse shuffles along slowly. Despite its constant hunger for brains, it shows a distinct lack of enthusiasm.",hp_max=20,mana_max=0,hp=20,mana=0,defense={'melee':30},attacks={'unarmed':3},speed=80,inventory=[],scared_at=0,brave_at=90),

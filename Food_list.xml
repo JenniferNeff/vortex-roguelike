@@ -373,6 +373,106 @@
 <healthy>True</healthy>
 
 </item>
+
+<item>
+
+<key>"mix1"</key>
+<name>"bottle of soylent"</name>
+<color></color>
+<description>"A bottle of thick protein slush."</description>
+<longdesc>"It's not green, but it is sort of baffling. This thick white liquid is about as bland as plain tofu, but it's pretty filling."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>666</calories>
+<caffeine>0</caffeine>
+<healthy>True</healthy>
+
+</item>
+<item>
+
+<key>"water1"</key>
+<name>"bottle of water"</name>
+<color></color>
+<description>"A bottle of plain water."</description>
+<longdesc>"The label has a picture of some Hawaiian waterfall on it, but it was probably bottled from a tap in New York. You could drink this, but it's not caffeinated or anything. It's just cold water."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>0</calories>
+<caffeine>0</caffeine>
+<healthy>True</healthy>
+
+</item>
+<item>
+
+<key>"water2"</key>
+<name>"cup of hot water"</name>
+<color></color>
+<description>"A cup of plain hot water."</description>
+<longdesc>"It's a covered cup of plain hot water, nearly boiling. You could drink it, carefully, but it wouldn't taste like much of anything."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<calories>0</calories>
+<caffeine>0</caffeine>
+<healthy>True</healthy>
+
+</item>
 <!--
 <item>
 

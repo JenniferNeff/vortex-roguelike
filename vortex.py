@@ -5,6 +5,7 @@ import curses, traceback, string, pickle, sys, random, collections, textwrap
 import curses.panel
 import unittest
 import startup_cutscene
+import pythoned_Item_list, pythoned_Food_list, pythoned_Monster_list
 
 # These are dummy values.
 # Standard screen size is 80 x 24; work default screen is a little smaller
@@ -13,6 +14,11 @@ scr_x = 80
 scr_y = 22
 x_center = scr_x / 2
 y_center = scr_y / 2
+
+# Grand dictionaries of all the Entities in the game.
+item_dict = pythoned_Item_list.all_the_things
+food_dict = pythoned_Food_list.all_the_things
+mons_dict = pythoned_Monster_list.all_the_things
 
 class Session(object):
     """Contains the objects of a particular play-through of the game,
@@ -97,6 +103,9 @@ def track(target):
     target.floor.y_offset = upperleft_y
 
     return (upperleft_y, upperleft_x, lowerright_y, lowerright_x)
+
+def level_filter(ents, lev):
+    return [x for x in ents.values() if x.level <= lev and x.level < lev + 10]
 
 
 class MapScreen(object):
@@ -344,7 +353,7 @@ def new_map_loop(session, map_screen, command=None):
                 session.PC.location = send_player_to.destination.location
                 session.PC.floor.layer3[session.PC.location] = session.PC
             elif isinstance(send_player_to.destination, int):
-                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=session.PC.floor.depth+send_player_to.destination), sess=session, depth=session.PC.floor.depth+send_player_to.destination, screen_x=scr_x, screen_y=scr_y)
+                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=session.PC.floor.depth+send_player_to.destination), sess=session, depth=session.PC.floor.depth+send_player_to.destination, screen_x=scr_x, screen_y=scr_y, items=level_filter(item_dict, session.PC.floor.depth+send_player_to.destination), foods=food_dict.values(), monsters=level_filter(mons_dict, session.PC.floor.depth+send_player_to.destination))
                 session.PC.location = session.PC.floor.up
                 session.PC.floor.layer3[session.PC.location] = session.PC
                 send_player_to.destination = session.PC.floor.layer2[session.PC.location]
@@ -359,7 +368,7 @@ def new_map_loop(session, map_screen, command=None):
                 session.PC.location = send_player_to.destination.location
                 session.PC.floor.layer3[session.PC.location] = session.PC
             elif isinstance(send_player_to.destination, int):
-                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=session.PC.floor.depth-send_player_to.destination), sess=session, depth=session.PC.floor.depth-send_player_to.destination, screen_x=scr_x, screen_y=scr_y)
+                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=session.PC.floor.depth-send_player_to.destination), sess=session, depth=session.PC.floor.depth-send_player_to.destination, screen_x=scr_x, screen_y=scr_y, items=level_filter(item_dict, session.PC.floor.depth+send_player_to.destination), foods=food_dict.values(), monsters=level_filter(mons_dict, session.PC.floor.depth+send_player_to.destination))
                 session.PC.location = session.PC.floor.down
                 session.PC.floor.layer3[session.PC.location] = session.PC
                 send_player_to.destination = session.PC.floor.layer2[session.PC.location]
@@ -497,7 +506,8 @@ def title_screen_startup(title):
             cutscene(page_one, None) # comment out if borked
             session = Session("awesome")
             test = objects.Floor(name="testmap", sess=session,
-                                 screen_x=scr_x, screen_y=scr_y)
+                                 screen_x=scr_x, screen_y=scr_y,
+                                 items=[], foods=[], monsters=[])
             session.world[test.name] = test
             #test.load_map(session) # map gets loaded here
             #test.populate() # this is in the Floor.__init__ function now
@@ -505,20 +515,11 @@ def title_screen_startup(title):
             session.PC.floor = test
             session.PC.location = (5,5)
             test.layer3[session.PC.location] = session.PC
-            testitem = objects.Item(floor=session.PC.floor, location=(6,10),
-                                    name="Nondescript item", symbol='$',
-                                    longdesc="This looks like nothing special, but maybe you can Invoke it.")
-            testweapon = objects.Item(floor=session.PC.floor, location=(4,16),
-                                      equip_slot='melee weapon',
-                                      description="A basic steel sword.",
-                                      longdesc="There's absolutely nothing special about this sword. Probably the last idiot who came in here dropped it when they got killed.",
-                                      name="Basic Sword", symbol='/')
-            testfood = objects.Food(floor=session.PC.floor, location=(5,20),
-                                    name="Mesa Bar",
-                                    description="A chewy energy bar.",
-                                    longdesc="A well-balanced nutrition bar, marketed heavily towards adventurers.")
-            testmonster = monsters.Zombie(flr=session.PC.floor, loc=(7,11))
-            testmonster2 = monsters.Snake(flr=session.PC.floor, loc=(12,46))
+            session.PC.floor.spawn(item_dict["testitem"], (6,10))
+            session.PC.floor.spawn(item_dict["testweapon"], (4,16))
+            session.PC.floor.spawn(food_dict["testfood"], (5,20))
+            session.PC.floor.spawn(mons_dict["zombie1"], (7,11))
+            session.PC.floor.spawn(mons_dict["snake1"], (12,46))
             return session
         if "2" == command: # load game
             title.window.addstr(18,29, "File to load: ")
@@ -566,7 +567,7 @@ def runit(stdscr):
     heads_up_display = HUD(thisgame)
     map_display = MapScreen(thisgame)
 
-    alerts.push("Hello Vanya, welcome to the Dungeons of Doom")
+    alerts.push("Welcome to the demo level!")
 
     # Initialize the stack of panels.
     # May need to do something else to keep them in order.

@@ -10,7 +10,7 @@
 # 6: cyan
 # 7: white
 
-import random, math
+import random, math, copy
 import new_levelgen
 
 # def_article: "the " for most things. "" for uniques with proper names.
@@ -60,7 +60,7 @@ class Entity(object):
                  longdesc="You don't know about this yet, longer",
                  def_article="the ", indef_article="a ",
                  xp=0, level=None, alignment=None, opaque=False,
-                 traversible=True, can_be_taken=False,
+                 traversable=True, can_be_taken=False,
                  hp_max=None, mana_max=None, hp=None, mana=None, defense={},
                  attacks={}, speed=60, accuracy=100,
                  layer=2, floor=None, location=None, hidden=False,
@@ -91,7 +91,7 @@ class Entity(object):
         self.level = level # deprecating
         self.alignment = alignment
         self.opaque = opaque
-        self.traversible = traversible
+        self.traversable = traversable
         self.can_be_taken = can_be_taken
         self.hp = hp
         self.mana = mana
@@ -173,12 +173,12 @@ class Entity(object):
                 if target in search_layer.keys():
                     # that space is already taken
                     continue
-                elif not self.floor.layer1[target[0]][target[1]].traversible:
+                elif not self.floor.layer1[target[0]][target[1]].traversable:
                     # the player can't stand there
                     continue
                 elif target in self.floor.layer2.keys() \
-                     and not self.floor.layer2[target].traversible:
-                    # don't spawn a layer 3 object on an untraversible layer 2
+                     and not self.floor.layer2[target].traversable:
+                    # don't spawn a layer 3 object on an untraversable layer 2
                     continue
                 else:
                     return target
@@ -252,16 +252,16 @@ class Door(Entity):
 
     def __init__(self, **kwargs):
         """Initialize a door with its special traits. Doors are 'rookwise'
-        traversible, which means they cannot be traversed diagonally.
+        traversable, which means they cannot be traversed diagonally.
         """
-        Entity.__init__(self, name='door', traversible='rookwise', symbol="+",
+        Entity.__init__(self, name='door', traversable='rookwise', symbol="+",
                         **kwargs)
 
 class Player(Entity):
 
     def __init__(self, **kwargs):
         """Initialize a player with its special traits."""
-        Entity.__init__(self, symbol="@", level=1, traversible=False,
+        Entity.__init__(self, symbol="@", level=1, traversable=False,
                         hp_max=50, mana_max=50, hp=50, mana=50, accuracy=80,
                         defense={'melee':80},
                         attacks={'unarmed':5,
@@ -461,7 +461,7 @@ class Item(Entity):
         picked up, dropped, and placed in inventories.
         """
         Entity.__init__(self, layer=2, # placeholder
-          traversible=True, can_be_taken=True,
+          traversable=True, can_be_taken=True,
           **kwargs)
         self.equip_slot = equip_slot
         self.cursed = cursed
@@ -577,7 +577,7 @@ class StairsDown(Entity):
 
     def __init__(self, destination=1, **kwargs):
         """Initialize a downward stairway."""
-        Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
+        Entity.__init__(self, layer=2, traversable=True, can_be_taken=False,
                         symbol=">", name="descending stairway", **kwargs)
         self.destination = destination
 
@@ -585,7 +585,7 @@ class StairsUp(Entity):
 
     def __init__(self, destination=1, **kwargs):
         """Initialize an upward stairway."""
-        Entity.__init__(self, layer=2, traversible=True, can_be_taken=False,
+        Entity.__init__(self, layer=2, traversable=True, can_be_taken=False,
                         symbol="<", name="ascending stairway",
                         indef_article="an ", **kwargs)
         self.destination = destination
@@ -599,7 +599,7 @@ class Monster(Entity):
         scared -- is the monster scared (usually means it flees)?
         """
         Entity.__init__(self, layer=3,
-          traversible=False,
+          traversable=False,
           can_be_taken=False,
           **kwargs)
         self.scared_at = scared_at
@@ -764,7 +764,7 @@ class Monster(Entity):
 class Floor(object):
 
     def __init__(self, name="Unknown Location", depth=0, sess=None,
-                 screen_x=80, screen_y=22):
+                 screen_x=80, screen_y=22, items=[], foods=[], monsters=[]):
         """Initialize a floor, or level, of the dungeon.
         Variables:
         name -- the name given to this level
@@ -776,6 +776,12 @@ class Floor(object):
         self.layer2 -- contains objects
         self.layer3 -- contains the player and moving monsters
          (thus the player can stand over an object that is on the floor)
+
+        If a file "{name}_{depth}.map" exists in the directory, where
+        the name and depth match this floor, then it will be used to
+        initialize this floor. If not, the level generator will be
+        used. .map files are just text, so you can "draw" handcrafted
+        levels in any text editor.
         """
         self.name = name
         self.depth = depth
@@ -795,7 +801,12 @@ class Floor(object):
         self.scr_x = screen_x
         self.scr_y = screen_y
 
+        self.items = items
+        self.foods = foods
+        self.monsters = monsters
+
         self.load_map()
+
 
     def load_map(self):
         """Build layer 1 of a map from a text file. A border of void
@@ -804,9 +815,9 @@ class Floor(object):
         """
         self.empty_tiles = []
         self.doors = []
-        try:
+        try: # handcrafted map
             getmap = open(self.filename, 'r')
-        except IOError:
+        except IOError: # level generator
             make_map = new_levelgen.Map(depth=self.depth)
             getmap = make_map.export_as_array()
         for line in getmap:
@@ -862,6 +873,7 @@ class Floor(object):
     def random_tile(self):
         """Return a random tile of empty floor. Intended to be used
         only at initialization, as it does not reset.
+        Might make this more robust later.
         """
         return self.empty_tiles.pop()
 
@@ -869,6 +881,16 @@ class Floor(object):
         """Put the randomly-generated entities on the map."""
         self.layer2[self.up] = StairsUp(floor=self, location=self.up)
         self.layer2[self.down] = StairsDown(floor=self, location=self.down)
+        for i in range(10):
+            try:
+                self.spawn(random.choice(self.items))
+            except IndexError:
+                pass
+        for i in range(10):
+            try:
+                self.spawn(random.choice(self.monsters))
+            except IndexError:
+                pass
 
     def probe(self, coordinates):
         """Return whatever object is visible on the map at that location."""
@@ -882,26 +904,37 @@ class Floor(object):
     def traverse_test(self, coordinates, moving_rookwise=False):
         """Is it possible for an entity to walk onto the given tile?"""
         try:
-            if not self.layer3[coordinates].traversible:
+            if not self.layer3[coordinates].traversable:
                 return False
         except KeyError:
             pass
         try:
-            if not self.layer2[coordinates].traversible:
+            if not self.layer2[coordinates].traversable:
                 return False
-            if self.layer2[coordinates].traversible == 'rookwise' \
+            if self.layer2[coordinates].traversable == 'rookwise' \
                and not moving_rookwise:
                 return False
         except KeyError:
             pass
-        if not self.layer1[coordinates[0]][coordinates[1]].traversible:
+        if not self.layer1[coordinates[0]][coordinates[1]].traversable:
             return False
-        elif self.layer1[coordinates[0]][coordinates[1]].traversible == 'rookwise' and not moving_rookwise:
+        elif self.layer1[coordinates[0]][coordinates[1]].traversable == 'rookwise' and not moving_rookwise:
             return False
         return True
 
+    def spawn(self, ent, coordinates=None):
+        """Places an entity on the map at the specified coordinates."""
+        if coordinates == None:
+            coordinates = self.empty_tiles.pop()
+        new_ent = copy.deepcopy(ent)
+        if isinstance(new_ent, Monster):
+            self.layer3[coordinates] = new_ent
+        else:
+            self.layer2[coordinates] = new_ent
+        new_ent.floor = self
+        new_ent.location = coordinates
 
-        
+
 def make_floor():
     """Generate one floor tile."""
     return Entity(name="bare floor", indef_article="", symbol=".",
@@ -909,17 +942,17 @@ def make_floor():
 
 def make_passage():
     """Generate one passage tile."""
-    return Entity(name="passage", symbol="#", traversible='rookwise',
+    return Entity(name="passage", symbol="#", traversable='rookwise',
                   description="A dungeon passage.")
 
 def make_wall(side="-"):
     """Generate one wall tile."""
     return Entity(name="wall", symbol=side, description="A wall.", opaque=True,
-                  traversible=False)
+                  traversable=False)
 
 def make_void():
     """Generate one void tile."""
     return Entity(symbol=" ", description="There's nothing there.",
-                  traversible=False)
+                  traversable=False)
 
 shouts = []

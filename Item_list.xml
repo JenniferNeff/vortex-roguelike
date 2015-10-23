@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Item template -->
+
+<all_items>
+<item>
+
+<key>"item1"</key>
+<name>"Unknown entity"</name>
+<symbol>"$"</symbol>
+<color>7</color>
+<description>"You don't know about this, yet"</description>
+<longdesc>"You don't know about this yet, longer"</longdesc>
+<def_article>"the "</def_article>
+<indef_article>"a "</indef_article>
+<xp>0</xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense>{}</defense>
+<attacks>{}</attacks>
+<speed>60</speed>
+<accuracy>100</accuracy>
+<floor></floor>
+<location></location>
+<hidden>False</hidden>
+<inventory>[]</inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+
+</item>
+
+<item>
+
+<key>"item2"</key>
+<name>"Testing Sword"</name>
+<symbol>"/"</symbol>
+<color>7</color>
+<description>"A sword that should be wielded"</description>
+<longdesc>"You don't know about this yet, longer"</longdesc>
+<def_article>"the "</def_article>
+<indef_article>"a "</indef_article>
+<xp>0</xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense>{}</defense>
+<attacks>{}</attacks>
+<speed>60</speed>
+<accuracy>100</accuracy>
+<floor></floor>
+<location></location>
+<hidden>False</hidden>
+<inventory>[]</inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot>"melee weapon"</equip_slot>
+
+</item>
+
+<item>
+
+<key>"testitem"</key>
+<name>"Nondescript Item"</name>
+<symbol>"$"</symbol>
+<color></color>
+<description></description>
+<longdesc>"This looks like nothing special, but maybe you can Invoke it."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+
+</item>
+
+<item>
+
+<key>"testweapon"</key>
+<name>"Basic Sword"</name>
+<symbol>"/"</symbol>
+<color></color>
+<description>"A basic steel sword."</description>
+<longdesc>"There's absolutely nothing special about this sword. Probably the last idiot who came in here dropped it when they got killed."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot>"melee weapon"</equip_slot>
+
+</item>
+<!--
+<item>
+
+<key></key>
+<name></name>
+<symbol></symbol>
+<color></color>
+<description></description>
+<longdesc></longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level></level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed></speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+
+</item>
+-->
+</all_items>

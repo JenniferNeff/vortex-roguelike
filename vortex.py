@@ -142,8 +142,11 @@ class MapScreen(object):
             if (item[0] >= coords[0] and item[0] < coords[2]-1) and \
                (item[1] > coords[1] and item[1] <= coords[3]):
                 # Remove ^ the equals and you will see a strange thing happen.
-                self.window.addstr(item[0]-coords[0], item[1]-coords[1],
-                                  floor.layer2[item].symbol)
+                try:
+                    self.window.addstr(item[0]-coords[0], item[1]-coords[1],
+                                      floor.layer2[item].symbol)
+                except curses.error:
+                    pass
         for item in floor.layer3.keys():
             if (item[0] >= coords[0] and item[0] < coords[2]-1) and \
                (item[1] > coords[1] and item[1] <= coords[3]):
@@ -353,7 +356,8 @@ def new_map_loop(session, map_screen, command=None):
                 session.PC.location = send_player_to.destination.location
                 session.PC.floor.layer3[session.PC.location] = session.PC
             elif isinstance(send_player_to.destination, int):
-                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=session.PC.floor.depth+send_player_to.destination), sess=session, depth=session.PC.floor.depth+send_player_to.destination, screen_x=scr_x, screen_y=scr_y, items=level_filter(item_dict, session.PC.floor.depth+send_player_to.destination), foods=food_dict.values(), monsters=level_filter(mons_dict, session.PC.floor.depth+send_player_to.destination))
+                target = session.PC.floor.depth+send_player_to.destination
+                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=target), sess=session, depth=target, screen_x=scr_x, screen_y=scr_y, items=level_filter(item_dict, target), foods=food_dict.values(), monsters=level_filter(mons_dict, target))
                 session.PC.location = session.PC.floor.up
                 session.PC.floor.layer3[session.PC.location] = session.PC
                 send_player_to.destination = session.PC.floor.layer2[session.PC.location]
@@ -368,7 +372,8 @@ def new_map_loop(session, map_screen, command=None):
                 session.PC.location = send_player_to.destination.location
                 session.PC.floor.layer3[session.PC.location] = session.PC
             elif isinstance(send_player_to.destination, int):
-                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=session.PC.floor.depth-send_player_to.destination), sess=session, depth=session.PC.floor.depth-send_player_to.destination, screen_x=scr_x, screen_y=scr_y, items=level_filter(item_dict, session.PC.floor.depth+send_player_to.destination), foods=food_dict.values(), monsters=level_filter(mons_dict, session.PC.floor.depth+send_player_to.destination))
+                target = session.PC.floor.depth-send_player_to.destination
+                session.PC.floor = objects.Floor(name="Basement level {d}".format(d=target), sess=session, depth=target, screen_x=scr_x, screen_y=scr_y, items=level_filter(item_dict, target), foods=food_dict.values(), monsters=level_filter(mons_dict, target))
                 session.PC.location = session.PC.floor.down
                 session.PC.floor.layer3[session.PC.location] = session.PC
                 send_player_to.destination = session.PC.floor.layer2[session.PC.location]

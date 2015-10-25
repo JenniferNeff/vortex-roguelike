@@ -382,6 +382,8 @@ class Player(Entity):
     def take(self):
         if self.location not in self.floor.layer2.keys():
             report("There's nothing here to take.")
+        elif not self.floor.layer2[self.location].can_be_taken:
+            report("That's not something you can take.")
         else:
             report("You pick up a %s." % \
               self.floor.layer2[self.location].name)
@@ -581,6 +583,9 @@ class StairsDown(Entity):
                         symbol=">", name="descending stairway", **kwargs)
         self.destination = destination
 
+    def when_taken(self):
+        return False
+
 class StairsUp(Entity):
 
     def __init__(self, destination=1, **kwargs):
@@ -589,6 +594,9 @@ class StairsUp(Entity):
                         symbol="<", name="ascending stairway",
                         indef_article="an ", **kwargs)
         self.destination = destination
+
+    def when_taken(self):
+        return False
 
 class Monster(Entity):
 
@@ -881,11 +889,11 @@ class Floor(object):
         """Put the randomly-generated entities on the map."""
         self.layer2[self.up] = StairsUp(floor=self, location=self.up)
         self.layer2[self.down] = StairsDown(floor=self, location=self.down)
-        for i in range(10):
-            try:
-                self.spawn(random.choice(self.items))
-            except IndexError:
-                pass
+#        for i in range(10):
+#            try:
+#                self.spawn(random.choice(self.items))
+#            except IndexError:
+#                pass
         for i in range(10):
             try:
                 self.spawn(random.choice(self.monsters))
@@ -925,7 +933,7 @@ class Floor(object):
     def spawn(self, ent, coordinates=None):
         """Places an entity on the map at the specified coordinates."""
         if coordinates == None:
-            coordinates = self.empty_tiles.pop()
+            coordinates = self.random_tile()
         new_ent = copy.deepcopy(ent)
         if isinstance(new_ent, Monster):
             self.layer3[coordinates] = new_ent

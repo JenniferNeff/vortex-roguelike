@@ -59,7 +59,7 @@ class Entity(object):
                  description="You don't know about this yet",
                  longdesc="You don't know about this yet, longer",
                  def_article="the ", indef_article="a ",
-                 xp=0, level=None, alignment=None, opaque=False,
+                 xp=0, level=1, alignment=None, opaque=False,
                  traversable=True, can_be_taken=False,
                  hp_max=None, mana_max=None, hp=None, mana=None, defense={},
                  attacks={}, speed=60, accuracy=100,
@@ -201,12 +201,12 @@ class Entity(object):
         defense_roll = random.randint(0,target.defense.setdefault('melee',0))
         if attack_roll > defense_roll:
             if isinstance(target, Player):
-                shouts.append(random.choice(
+                report(random.choice(
                   ("{Adef}{Aname} scores a hit against you.",
                    "{Adef}{Aname} strikes you.")
                   ).format(Adef=self.def_article.capitalize(), Aname=self.name))
             else:
-                shouts.append(random.choice(
+                report(random.choice(
                   ("{Adef}{Aname} scores a hit against {Bdef}{Bname}.",
                    "{Adef}{Aname} strikes {Bdef}{Bname}.")
                   ).format(Adef=self.def_article.capitalize(), Aname=self.name,
@@ -287,6 +287,7 @@ class Player(Entity):
         self.running = False
 
         self.skills = {}
+        self.inventory = []
 
     def act(self):
         """All actions that "take one action" call this."""
@@ -380,17 +381,19 @@ class Player(Entity):
         self.act()
 
     def take(self):
-        if self.location not in self.floor.layer2.keys():
+        try:
+            taking_this = self.floor.layer2[self.location]
+        except KeyError:
             report("There's nothing here to take.")
-        elif not self.floor.layer2[self.location].can_be_taken:
-            report("That's not something you can take.")
-        else:
-            report("You pick up a %s." % \
-              self.floor.layer2[self.location].name)
-            self.floor.layer2[self.location].when_taken()
-            self.inventory.append(self.floor.layer2.pop(self.location))
-            self.act()
 
+        if taking_this.when_taken(self):
+            report("You pick up a %s." % taking_this.name)
+            #report("Removing item from %s." % str(taking_this.location))
+            self.floor.layer2.pop(self.location)
+            self.inventory.append(taking_this)
+            taking_this.location = None
+            self.act()
+            
     def drop(self, item):
         if self.location in self.floor.layer2.keys():
             report("There's already something on the floor.")
@@ -398,6 +401,7 @@ class Player(Entity):
             report("You drop the %s." % item.name)
             self.floor.layer2[self.location] = item
             self.inventory.remove(item)
+            item.location = self.location
             item.when_dropped()
             self.act()
 
@@ -488,9 +492,9 @@ class Item(Entity):
     # The when_*() functions return False when that action fails, and True
     # when it succeeds. They should also contain all related reports.
 
-    def when_taken(self):
+    def when_taken(self, user):
         """An item might do something special when picked up."""
-        pass
+        return True if self.can_be_taken else False
 
     def when_dropped(self):
         """An item might do something special when dropped."""
@@ -583,7 +587,7 @@ class StairsDown(Entity):
                         symbol=">", name="descending stairway", **kwargs)
         self.destination = destination
 
-    def when_taken(self):
+    def when_taken(self, user):
         return False
 
 class StairsUp(Entity):
@@ -595,7 +599,7 @@ class StairsUp(Entity):
                         indef_article="an ", **kwargs)
         self.destination = destination
 
-    def when_taken(self):
+    def when_taken(self, user):
         return False
 
 class Monster(Entity):
@@ -755,7 +759,7 @@ class Monster(Entity):
         self.drop_loot()
         del self.floor.layer3[self.location]
         self.location = None
-        shouts.append(random.choice(
+        report(random.choice(
           ("{Adef}{Aname} dies.",
            "{Adef}{Aname} collapses, lifeless.")
           ).format(Adef=self.def_article.capitalize(), Aname=self.name))
@@ -889,11 +893,15 @@ class Floor(object):
         """Put the randomly-generated entities on the map."""
         self.layer2[self.up] = StairsUp(floor=self, location=self.up)
         self.layer2[self.down] = StairsDown(floor=self, location=self.down)
-#        for i in range(10):
-#            try:
-#                self.spawn(random.choice(self.items))
-#            except IndexError:
-#                pass
+#
+        for i in range(10):
+            try:
+                self.spawn(random.choice(self.items))
+            except IndexError:
+                pass
+#
+        #for i in self.items:
+        #    report(i.name)
         for i in range(10):
             try:
                 self.spawn(random.choice(self.monsters))
@@ -941,6 +949,8 @@ class Floor(object):
             self.layer2[coordinates] = new_ent
         new_ent.floor = self
         new_ent.location = coordinates
+        #report("%s: %s" % (new_ent.name, str(new_ent.location)))
+        #report("%s: %s" % (ent.name, str(ent.location)))
 
 
 def make_floor():

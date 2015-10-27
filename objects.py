@@ -50,8 +50,8 @@ def report(sentence):
     """Add an object-generated message to the message queue"""
     shouts.append(smartcaps(sentence))
 
-def roll(a, b):
-    return a * random.randint(1,b)
+def roll(n=1,sides=10):
+    return sum([random.randint(1,sides) for x in range(n)])
 
 class Entity(object):
     """Class handling just about every "thing" in the game."""
@@ -98,7 +98,7 @@ class Entity(object):
         self.can_be_taken = can_be_taken
         self.hp = hp
         self.mana = mana
-        self.hp_max = hp_max # deprecating
+        #self.hp_max = hp_max # deprecating
         self.mana_max = mana_max # deprecating
         self.defense = defense
         self.attacks = attacks
@@ -116,6 +116,16 @@ class Entity(object):
                 self.floor.layer3[self.location] = self
         self.inventory = inventory
         self.session = sess
+
+        if not isinstance(hp_max, int):
+            hp_max = roll(self.level, 8)
+
+        self.hp_max = hp_max # deprecating?
+        self.stats["max HP"] = hp_max
+        self.adjusted_stats["max HP"] = hp_max
+        self.hp = hp_max # deprecating?
+        self.stats["HP"] = hp_max
+        self.adjusted_stats["HP"] = hp_max
 
     def __str__(self):
         return self.symbol # there might be some better use for this
@@ -265,7 +275,7 @@ class Player(Entity):
     def __init__(self, **kwargs):
         """Initialize a player with its special traits."""
         Entity.__init__(self, symbol="@", level=1, traversable=False,
-                        hp_max=50, mana_max=50, hp=50, mana=50, accuracy=80,
+                        hp_max=10, mana_max=10, hp=10, mana=10, accuracy=50,
                         defense={'melee':80},
                         attacks={'unarmed':5,
                                  'melee':8}

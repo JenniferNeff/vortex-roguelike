@@ -205,7 +205,7 @@ If a player tries to eat something that would overflow the health meter by any a
 "Healthy" foods decrease fatigue slightly when eaten.
 
 Mesa Bar - Lightweight, moderately filling, healthy.
-Mesa Negra Bar - A Mesa Bar with light caffeine.
+"Black" Mesa Bar - A Mesa Bar with light caffeine. (ha!)
 Green Tea - Beverage with light caffeine; healthy.
 Black Tea - Beverage with medium caffeine.
 Black Coffee - Beverage with high caffeine.

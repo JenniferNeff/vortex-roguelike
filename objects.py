@@ -50,6 +50,9 @@ def report(sentence):
     """Add an object-generated message to the message queue"""
     shouts.append(smartcaps(sentence))
 
+def roll(a, b):
+    return a * random.randint(1,b)
+
 class Entity(object):
     """Class handling just about every "thing" in the game."""
     # Goal: make long descriptions Dialogue screens.
@@ -617,6 +620,9 @@ class Monster(Entity):
         self.scared_at = scared_at
         self.brave_at = brave_at
         self.scared = False
+        if self.hp_max == None:
+            self.hp_max = roll(self.level, 8)
+            self.hp = self.hp_max
 
     def move(self, y, x):
         """Movement, for monsters."""

@@ -70,6 +70,176 @@
 <brave_at>90</brave_at>
 
 </item>
+
+<item>
+
+<key>"syrup1"</key>
+<name>"breakfast syrup monster"</name>
+<symbol>"o"</symbol>
+<color></color>
+<description>"A slimy mass of sugary protoplasm."</description>
+<longdesc>"A creature spawned of hunger, mad science, and low-budget ingredients. It takes the shape of a giant amoeba, with a vague maple-ish color and an even more vague maple-ish scent. Its strange aftertaste and too-thick viscoscity betray its cheapness. It creeps slowly along with a quiet malevolence, sticking to everything it touches."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level>1</level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed>120</speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<scared_at></scared_at>
+<brave_at></brave_at>
+
+</item>
+
+<item>
+
+<key>"syrup2"</key>
+<name>"agave ooze monster"</name>
+<symbol>"o"</symbol>
+<color></color>
+<description>"A sweet, sticky ooze, somewhat runny."</description>
+<longdesc>"One of two products harvested from the Dire Agave plant. Possibly escaped from a planar rift near a health food store. This ooze has a low glycemic index, and may prove a durable opponent."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level>8</level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed>60</speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<scared_at></scared_at>
+<brave_at></brave_at>
+
+</item>
+
+<item>
+
+<key>"syrup3"</key>
+<name>"honey ooze monster"</name>
+<symbol>"o"</symbol>
+<color></color>
+<description>"A very viscous golden ooze that smells of flowers."</description>
+<longdesc>"A very thick, very sweet ooze monster that spawns in Dire Bee hives. Though it is mostly a golden color, specks of pollen are visible in it, and along the edges it has taken a slightly crystalline texture."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level>15</level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed>70</speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<scared_at></scared_at>
+<brave_at></brave_at>
+
+</item>
+
+<item>
+
+<key>"syrup4"</key>
+<name>"maple syrup monster"</name>
+<symbol>"o"</symbol>
+<color></color>
+<description>"An aromatic brown ooze."</description>
+<longdesc>"The Maple Syrup Monster is a tragic creature. It is somewhat rare, as it originates only in the extracted sap of a Maple Treant. Though the tree-people are peaceful, their stolen sap often becomes vengeful and violent. The resulting monster can fill an entire dungeon floor with a delicious sweet scent."</longdesc>
+<def_article></def_article>
+<indef_article></indef_article>
+<xp></xp>
+<level>22</level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed>50</speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<scared_at></scared_at>
+<brave_at></brave_at>
+
+</item>
+
+<item>
+
+<key>"syrup5"</key>
+<name>"Boston Molasses Monster"</name>
+<symbol>"O"</symbol>
+<color></color>
+<description>"The ur-ooze of sugar oozes!"</description>
+<longdesc>"A massive, lake-sized blob of molasses, first sighted in Boston in 1919. The 2.3 million gallon wave of molasses escaped from its tank, crushed buildings, bent girders, and killed 22 people. Now it's living in your data center's dungeon as the king of the sugar oozes."</longdesc>
+<def_article></def_article>
+<indef_article>"the "</indef_article>
+<xp></xp>
+<level>33</level>
+<alignment></alignment>
+<opaque></opaque>
+<hp_max></hp_max>
+<mana_max></mana_max>
+<hp></hp>
+<mana></mana>
+<defense></defense>
+<attacks></attacks>
+<speed>50</speed>
+<accuracy></accuracy>
+<floor></floor>
+<location></location>
+<hidden></hidden>
+<inventory></inventory>
+<sess></sess>
+<gender></gender>
+<equip_slot></equip_slot>
+<scared_at></scared_at>
+<brave_at></brave_at>
+
+</item>
 <!--
 <item>
 

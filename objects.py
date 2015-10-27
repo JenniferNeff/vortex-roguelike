@@ -152,9 +152,7 @@ class Entity(object):
         else:
             moving_rookwise = False
 
-        result = self.floor.traverse_test(dest, moving_rookwise)
-        #report(str(result))
-        return result
+        return self.floor.traverse_test(dest, moving_rookwise)
 
     def find_open(self, layer):
         """
@@ -700,18 +698,19 @@ class Monster(Entity):
         """
         cells = [(y,x) for y in (-1,0,1) for x in (-1,0,1) \
                  if not (y == 0 and x == 0)]
-        rookcells = [(y,x) for y in (-1,0,1) for x in (-1,0,1) \
-                     if not (y == 0 and x == 0) and (y == 0 or x == 0)]
+        rookcells = [(1,0), (-1,0), (0,1), (0-1)]
 
         for i in cells:
-            gohere = (self.location[0]+i[0], self.location[1]+i[1])
-            if gohere in self.floor.layer2 and \
-               (isinstance(self.floor.layer1[gohere[0]][gohere[1]], Door) and \
-               (i in rookcells and self.floor.layer3[gohere] == victim)):
-                return gohere
-            elif gohere in self.floor.layer3 and \
-               self.floor.layer3[gohere] == victim:
-                return gohere
+            go_here = (self.location[0]+i[0], self.location[1]+i[1])
+            if victim.location != go_here:
+                continue
+            if i in rookcells and \
+               self.floor.traverse_test(go_here, moving_rookwise=True,
+                                        no_3=True):
+                return go_here
+            elif self.floor.traverse_test(go_here, no_3=True):
+                return go_here
+
         return None
 
     def AI_melee_brute(self, adventurer):
@@ -933,15 +932,16 @@ class Floor(object):
         else:
             return self.layer1[coordinates[0]][coordinates[1]]
 
-    def traverse_test(self, coordinates, moving_rookwise=False):
+    def traverse_test(self, coordinates, moving_rookwise=False, no_3=False):
         """Is it possible for an entity to walk onto the given tile?"""
+        if not no_3:
+            try:
+                if not self.layer3[coordinates].traversable:
+                    return False
+            except KeyError:
+                pass
         try:
-            if not self.layer3[coordinates].traversable:
-                return False
-        except KeyError:
-            pass
-        try:
-            if not self.layer2[coordinates].traversable:
+            if self.layer2[coordinates].traversable == False:
                 return False
             if self.layer2[coordinates].traversable == 'rookwise' \
                and not moving_rookwise:

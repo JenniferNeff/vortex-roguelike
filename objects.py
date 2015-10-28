@@ -39,19 +39,25 @@ def strike_notifs(sub, obj):
     else:
         obj_name = obj.name
 
-    reply = random.choice("{Adef}{Aname} scores a hit against {Bdef}{Bname}.",
-                          "{Adef}{Aname} strikes {Bdef}{Bname}.").format(
+    reply = random.choice(("{Adef}{Aname} scores a hit against {Bdef}{Bname}.",
+                          "{Adef}{Aname} strikes {Bdef}{Bname}.")).format(
                           Adef=sub.def_article, Aname=sub_name,
                           Bdef=obj.def_article, Bname=obj_name)
 
     return smartcaps(reply)
 
 def report(sentence):
-    """Add an object-generated message to the message queue"""
+    """Add an object-generated message to the message queue."""
     shouts.append(smartcaps(sentence))
 
 def roll(n=1,sides=10):
+    """Roll n dice with the specified number of sides."""
     return sum([random.randint(1,sides) for x in range(n)])
+
+def distance(loc1, loc2):
+    """Find the pythagorean distance between two sets of coordinates.
+    """
+    return math.sqrt((loc1[0] - loc2[0])**2 + (loc1[1] - loc2[1])**2)
 
 class Entity(object):
     """Class handling just about every "thing" in the game."""
@@ -212,16 +218,17 @@ class Entity(object):
         defense_roll = random.randint(0,target.defense.setdefault('melee',0))
         if attack_roll > defense_roll:
             if isinstance(target, Player):
-                report(random.choice(
-                  ("{Adef}{Aname} scores a hit against you.",
-                   "{Adef}{Aname} strikes you.")
-                  ).format(Adef=self.def_article.capitalize(), Aname=self.name))
+                obname = "you"
+                obdef = ""
             else:
-                report(random.choice(
+                obname = target.name
+                obdef = target.def_article
+            report(random.choice(
                   ("{Adef}{Aname} scores a hit against {Bdef}{Bname}.",
-                   "{Adef}{Aname} strikes {Bdef}{Bname}.")
-                  ).format(Adef=self.def_article.capitalize(), Aname=self.name,
-                           Bdef=target.def_article, Bname=target.name))
+                   "{Adef}{Aname} strikes {Bdef}{Bname}.",
+                   "{Adef}{Aname} lands a solid blow on {Bdef}{Bname}.")
+                  ).format(Adef=self.def_article, Aname=self.name,
+                           Bdef=obdef, Bname=obname))
             
             if None == implement:
                 damage_roll = random.randint(1, self.attacks['unarmed'])
@@ -230,20 +237,21 @@ class Entity(object):
                 damage_roll = 0
                 # seriously, fix it
             target.hp -= damage_roll
+            target.asleep = False
             if 0 >= target.hp:
                 target.perish(murderer=self)
         else:
             if isinstance(target, Player):
-                report(random.choice(
-                  ("{Adef}{Aname} misses you.",
-                   "{Adef}{Aname} swings and misses you.")
-                  ).format(Adef=self.def_article, Aname=self.name))
+                obname = "you"
+                obdef = ""
             else:
-                report(random.choice(
+                obname = target.name
+                obdef = target.def_article
+            report(random.choice(
                   ("{Adef}{Aname} misses {Bdef}{Bname}.",
                    "{Adef}{Aname} swings and misses {Bdef}{Bname}.")
                   ).format(Adef=self.def_article, Aname=self.name,
-                           Bdef=target.def_article, Bname=target.name))
+                           Bdef=obdef, Bname=obname))
 
     def level_up(self):
         """Allows this entity to gain a level."""
@@ -615,11 +623,15 @@ class StairsUp(Entity):
 
 class Monster(Entity):
 
-    def __init__(self, scared_at=0, brave_at=90, **kwargs):
+    def __init__(self, scared_at=0, brave_at=90, flee_radius=30,
+                 aggro_radius=30, sleepy=0, **kwargs):
         """Initialize a monster.
         scared_at -- at what HP% will it become afraid?
         brave_at -- at what HP% will it lose scared status?
         scared -- is the monster scared (usually means it flees)?
+        flee_radius -- only flees this far from the player
+        aggro_radius -- only pursues when player this close
+        sleepy -- % chance that a monster will be asleep when spawned
         """
         Entity.__init__(self, layer=3,
           traversable=False,
@@ -631,6 +643,12 @@ class Monster(Entity):
         if self.hp_max == None:
             self.hp_max = roll(self.level, 8)
             self.hp = self.hp_max
+        self.flee_radius = flee_radius
+        self.aggro_radius = aggro_radius
+        if roll(1, 100) <= sleepy:
+            self.asleep = True
+        else:
+            self.asleep = False
 
     def move(self, y, x):
         """Movement, for monsters."""
@@ -719,9 +737,14 @@ class Monster(Entity):
         monsters stand still and attack when diagonally adjacent to a
         target rather than trying to edge over to a squarely adjacent
         position.
+        Supports:
+         - fleeing at low health, pursuing at high health
+         - only pursues or flees when player is within range
+         - inactive if asleep
         """
         # do nothing when the player is on a different floor
-        if adventurer.floor != self.floor:
+        # or if the monster is asleep
+        if adventurer.floor != self.floor or self.asleep:
             return
 
         if 100 * self.hp / self.hp_max < self.scared_at:
@@ -729,9 +752,14 @@ class Monster(Entity):
         elif 100 * self.hp / self.hp_max > self.brave_at:
             self.scared = False
 
-        if self.scared:
+        if self.scared and \
+           distance(self.location, adventurer.location) <= self.flee_radius:
+            start_at = tuple(self.location)
             self.pursue(adventurer.location[0], adventurer.location[1], flee=-1)
-        else:
+            if self.location == start_at:
+                # fight when cornered
+                self.attack(self.check_adjacency(adventurer))
+        elif distance(self.location, adventurer.location) <= self.aggro_radius:
             strike = self.check_adjacency(adventurer)
             if strike != None:
                 self.attack(strike)

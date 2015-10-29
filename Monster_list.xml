@@ -37,6 +37,7 @@
 <flee_radius></flee_radius>
 <aggro_radius></aggro_radius>
 <sleepy></sleepy>
+<proc></proc>
 
 </item>
 
@@ -74,6 +75,7 @@
 <flee_radius></flee_radius>
 <aggro_radius></aggro_radius>
 <sleepy>50</sleepy>
+<proc></proc>
 
 </item>
 
@@ -96,7 +98,7 @@
 <hp></hp>
 <mana></mana>
 <defense></defense>
-<attacks></attacks>
+<attacks>{'unarmed':objects.roll(1,4)}</attacks>
 <speed>120</speed>
 <accuracy></accuracy>
 <floor></floor>
@@ -111,6 +113,7 @@
 <flee_radius></flee_radius>
 <aggro_radius></aggro_radius>
 <sleepy></sleepy>
+<proc>"sticky"</proc>
 
 </item>
 
@@ -133,7 +136,7 @@
 <hp></hp>
 <mana></mana>
 <defense></defense>
-<attacks></attacks>
+<attacks>{'unarmed':objects.roll(1,6)}</attacks>
 <speed>60</speed>
 <accuracy></accuracy>
 <floor></floor>
@@ -148,6 +151,7 @@
 <flee_radius></flee_radius>
 <aggro_radius></aggro_radius>
 <sleepy></sleepy>
+<proc></proc>
 
 </item>
 
@@ -170,7 +174,7 @@
 <hp></hp>
 <mana></mana>
 <defense></defense>
-<attacks></attacks>
+<attacks>{'unarmed':objects.roll(1,10)}</attacks>
 <speed>70</speed>
 <accuracy></accuracy>
 <floor></floor>
@@ -185,6 +189,7 @@
 <flee_radius></flee_radius>
 <aggro_radius></aggro_radius>
 <sleepy></sleepy>
+<proc></proc>
 
 </item>
 
@@ -207,7 +212,7 @@
 <hp></hp>
 <mana></mana>
 <defense></defense>
-<attacks></attacks>
+<attacks>{'unarmed':objects.roll(2,6)}</attacks>
 <speed>50</speed>
 <accuracy></accuracy>
 <floor></floor>
@@ -222,6 +227,7 @@
 <flee_radius></flee_radius>
 <aggro_radius></aggro_radius>
 <sleepy></sleepy>
+<proc></proc>
 
 </item>
 
@@ -244,7 +250,7 @@
 <hp></hp>
 <mana></mana>
 <defense></defense>
-<attacks></attacks>
+<attacks>{'unarmed':objects.roll(3,6)}</attacks>
 <speed>50</speed>
 <accuracy></accuracy>
 <floor></floor>
@@ -259,6 +265,7 @@
 <flee_radius></flee_radius>
 <aggro_radius></aggro_radius>
 <sleepy></sleepy>
+<proc></proc>
 
 </item>
 <!--
@@ -296,6 +303,7 @@
 <flee_radius></flee_radius>
 <aggro_radius></aggro_radius>
 <sleepy></sleepy>
+<proc></proc>
 
 </item>
 -->

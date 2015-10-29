@@ -89,6 +89,9 @@ class Entity(object):
                                "max mana": mana_max,
                                "speed": speed,
                                "accuracy": accuracy}
+        self.ailments = {"asleep": False,
+                         "stuck": 0,
+                         "poisoned": 0}
         self.name = name
         self.symbol = symbol
         self.color = color
@@ -216,13 +219,11 @@ class Entity(object):
         target = self.floor.layer3[aim]
         attack_roll = random.randint(0,self.adjusted_stats["accuracy"])
         defense_roll = random.randint(0,target.defense.setdefault('melee',0))
+        if isinstance(target, Player):
+            obname, obdef = ("you", "")
+        else:
+            obname, obdef = (target.name, target.def_article)
         if attack_roll > defense_roll:
-            if isinstance(target, Player):
-                obname = "you"
-                obdef = ""
-            else:
-                obname = target.name
-                obdef = target.def_article
             report(random.choice(
                   ("{Adef}{Aname} scores a hit against {Bdef}{Bname}.",
                    "{Adef}{Aname} strikes {Bdef}{Bname}.",
@@ -231,22 +232,16 @@ class Entity(object):
                            Bdef=obdef, Bname=obname))
             
             if None == implement:
-                damage_roll = random.randint(1, self.attacks['unarmed'])
+                damage_roll = self.attacks['unarmed']
             else:
                 report("Attacked with weapon. Fix this!")
                 damage_roll = 0
                 # seriously, fix it
             target.hp -= damage_roll
-            target.asleep = False
+            target.ailments["asleep"] = False
             if 0 >= target.hp:
                 target.perish(murderer=self)
         else:
-            if isinstance(target, Player):
-                obname = "you"
-                obdef = ""
-            else:
-                obname = target.name
-                obdef = target.def_article
             report(random.choice(
                   ("{Adef}{Aname} misses {Bdef}{Bname}.",
                    "{Adef}{Aname} swings and misses {Bdef}{Bname}.")
@@ -259,7 +254,7 @@ class Entity(object):
             self.stats['level'] += 1
             hp_ratio = float(self.hp) / float(self.adjusted_stats['max HP'])
             # This is the leveling HP curve.
-            self.stats['max HP'] += random.randint(10,20)
+            self.stats['max HP'] += roll(1,10)
             self.calc_stats()
             self.hp = int(math.floor(self.adjusted_stats['max HP'] * hp_ratio))
             if isinstance(self, Player):
@@ -313,6 +308,10 @@ class Player(Entity):
         #if random.randint(1,100) < 30:
         if True: # for testing
             self.hunger += 1
+        for k in self.ailments.keys():
+            if isinstance(self.ailments[k], int) and self.ailments[k] > 0:
+                self.ailments[k] -= 1
+        report("Unstuck in %d turns." % self.ailments["stuck"])
 
         self.initiative += self.adjusted_stats["speed"]
         self.calc_stats()
@@ -355,9 +354,12 @@ class Player(Entity):
             self.floor.layer1[dest[0]][dest[1]].walkon(self)
 
         if trav:
-            self.location = dest
-            del self.floor.layer3[source]
-            self.floor.layer3[dest] = self
+            if self.ailments["stuck"] > 0:
+                report("You're stuck, and can't move.")
+            else:
+                self.location = dest
+                del self.floor.layer3[source]
+                self.floor.layer3[dest] = self
 
             # Healing happens here so it won't in combat
             if self.hp < self.adjusted_stats["max HP"] \
@@ -390,6 +392,7 @@ class Player(Entity):
                 damage_roll = 0
                 # seriously, fix it
             target.hp -= damage_roll
+            target.ailments["asleep"] = False
             if 0 >= target.hp:
                 target.perish(murderer=self)
         else:
@@ -406,7 +409,7 @@ class Player(Entity):
             report("There's nothing here to take.")
 
         if taking_this.when_taken(self):
-            report("You pick up a %s." % taking_this.name)
+            report("You pick up a {0.name}.".format(taking_this))
             #report("Removing item from %s." % str(taking_this.location))
             self.floor.layer2.pop(self.location)
             self.inventory.append(taking_this)
@@ -417,7 +420,7 @@ class Player(Entity):
         if self.location in self.floor.layer2.keys():
             report("There's already something on the floor.")
         else:
-            report("You drop the %s." % item.name)
+            report("You drop the {0.name}.".format(item))
             self.floor.layer2[self.location] = item
             self.inventory.remove(item)
             item.location = self.location
@@ -624,7 +627,7 @@ class StairsUp(Entity):
 class Monster(Entity):
 
     def __init__(self, scared_at=0, brave_at=90, flee_radius=30,
-                 aggro_radius=30, sleepy=0, **kwargs):
+                 aggro_radius=30, sleepy=0, proc=None, **kwargs):
         """Initialize a monster.
         scared_at -- at what HP% will it become afraid?
         brave_at -- at what HP% will it lose scared status?
@@ -646,9 +649,13 @@ class Monster(Entity):
         self.flee_radius = flee_radius
         self.aggro_radius = aggro_radius
         if roll(1, 100) <= sleepy:
-            self.asleep = True
+            self.ailments["asleep"] = True
         else:
-            self.asleep = False
+            self.ailments["asleep"] = False
+        if proc == "sticky":
+            self.proc = self.proc_sticky
+        else:
+            self.proc = self.proc_null
 
     def move(self, y, x):
         """Movement, for monsters."""
@@ -662,7 +669,7 @@ class Monster(Entity):
             self.floor.layer2[dest].walkon(self)
         self.floor.layer1[dest[0]][dest[1]].walkon(self)
 
-        if self.traverse_test(y,x):
+        if self.traverse_test(y,x) and self.ailments["stuck"] <= 0:
             self.location = dest
             del self.floor.layer3[source]
             self.floor.layer3[dest] = self
@@ -744,7 +751,7 @@ class Monster(Entity):
         """
         # do nothing when the player is on a different floor
         # or if the monster is asleep
-        if adventurer.floor != self.floor or self.asleep:
+        if adventurer.floor != self.floor or self.ailments["asleep"]:
             return
 
         if 100 * self.hp / self.hp_max < self.scared_at:
@@ -791,6 +798,7 @@ class Monster(Entity):
                 stomper.attack(self.location)
                 # May need to be more clever about this.
                 # lack of self.equipped vs. self.attack()
+        self.proc(stomper)
 
     # Idea: make a monster that moves like a chess knight.
     # ...or is otherwise constrained rook/bishop/pawn style
@@ -815,6 +823,13 @@ class Monster(Entity):
             dropzone = self.find_open(2)
             self.floor.layer2[dropzone] = item
             self.inventory.remove(item)
+
+    def proc_null(self, attacker):
+        pass
+
+    def proc_sticky(self, attacker):
+        if roll(1,100) <= 40:
+            attacker.ailments["stuck"] += roll(1, 4)
 
 class Floor(object):
 
@@ -948,6 +963,12 @@ class Floor(object):
         for i in range(10):
             try:
                 self.spawn(random.choice(self.monsters))
+            except IndexError:
+                pass
+
+        for i in range(random.randint(0,2)):
+            try:
+                self.spawn(random.choice(self.foods))
             except IndexError:
                 pass
 

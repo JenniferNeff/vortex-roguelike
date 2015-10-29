@@ -46,7 +46,7 @@ class Session(object):
         if "" != savename:
             self.name = savename
             output = open(self.name, 'w')
-            pickle.dump(self, output)
+            pickle.dump(self, output, 2)
             output.close()
 
 # Basic movement keys; same as in Rogue

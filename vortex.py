@@ -487,9 +487,12 @@ def cutscene(page, command=None):
         else:
             dialogueoption = int(dialogueoption)
             if page.branches != None:
-                if isinstance(page.branches[dialogueoption - 1], Dialogue):
-                    page = page.branches[dialogueoption - 1]
-                    dialogueoption = 0
+                try:
+                    if isinstance(page.branches[dialogueoption - 1], Dialogue):
+                        page = page.branches[dialogueoption - 1]
+                        dialogueoption = 0
+                except IndexError:
+                    continue
     
 
 def title_screen_startup(title):

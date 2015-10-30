@@ -25,26 +25,26 @@ def smartcaps(sentence):
     return start.capitalize() + remainder
     
 
-def strike_notifs(sub, obj):
-    """Takes the subject and object of a sentence in which the subject hits
-    the object. Returns an appropriate sentence."""
-
-    if isinstance(sub, Player):
-        sub_name = "you"
-    else:
-        sub_name = sub.name
-
-    if isinstance(obj, Player):
-        obj_name = "you"
-    else:
-        obj_name = obj.name
-
-    reply = random.choice(("{Adef}{Aname} scores a hit against {Bdef}{Bname}.",
-                          "{Adef}{Aname} strikes {Bdef}{Bname}.")).format(
-                          Adef=sub.def_article, Aname=sub_name,
-                          Bdef=obj.def_article, Bname=obj_name)
-
-    return smartcaps(reply)
+#def strike_notifs(sub, obj):
+#    """Takes the subject and object of a sentence in which the subject hits
+#    the object. Returns an appropriate sentence."""
+#
+#    if isinstance(sub, Player):
+#        sub_name = "you"
+#    else:
+#        sub_name = sub.name
+#
+#    if isinstance(obj, Player):
+#        obj_name = "you"
+#    else:
+#        obj_name = obj.name
+#
+#    reply = random.choice(("{Adef}{Aname} scores a hit against {Bdef}{Bname}.",
+#                          "{Adef}{Aname} strikes {Bdef}{Bname}.")).format(
+#                          Adef=sub.def_article, Aname=sub_name,
+#                          Bdef=obj.def_article, Bname=obj_name)
+#
+#    return smartcaps(reply)
 
 def report(sentence):
     """Add an object-generated message to the message queue."""
@@ -276,10 +276,10 @@ class Player(Entity):
     def __init__(self, **kwargs):
         """Initialize a player with its special traits."""
         Entity.__init__(self, symbol="@", level=1, traversable=False,
-                        hp_max=10, mana_max=10, hp=10, mana=10, accuracy=50,
-                        defense={'melee':80},
-                        attacks={'unarmed':5,
-                                 'melee':8}
+                        hp_max=10, mana_max=10, hp=10, mana=10, accuracy=40,
+                        defense={'melee':40},
+                        attacks={'unarmed': roll(1,5),
+                                 'melee':roll(1,8)}
                         )
         self.equipped = {'melee weapon': None,
                          'helm': None,
@@ -311,7 +311,7 @@ class Player(Entity):
         for k in self.ailments.keys():
             if isinstance(self.ailments[k], int) and self.ailments[k] > 0:
                 self.ailments[k] -= 1
-        report("Unstuck in %d turns." % self.ailments["stuck"])
+        #report("Unstuck in %d turns." % self.ailments["stuck"])
 
         self.initiative += self.adjusted_stats["speed"]
         self.calc_stats()
@@ -383,9 +383,9 @@ class Player(Entity):
                "You strike {Bdef}{Bname}.")
               ).format(Bdef=target.def_article, Bname=target.name))
             if None == implement:
-                damage_roll = random.randint(1, self.attacks['unarmed'])
+                damage_roll = self.attacks['unarmed']
             elif self.equipped['melee weapon'] == implement:
-                damage_roll = random.randint(1, self.attacks['melee'])
+                damage_roll = self.attacks['melee']
                 # add modifier for weapon
             else:
                 report("This attack type not defined. Fix this!")
@@ -644,7 +644,7 @@ class Monster(Entity):
         self.brave_at = brave_at
         self.scared = False
         if self.hp_max == None:
-            self.hp_max = roll(self.level, 8)
+            self.hp_max = (self.level * 8) + roll(self.level, 8)
             self.hp = self.hp_max
         self.flee_radius = flee_radius
         self.aggro_radius = aggro_radius

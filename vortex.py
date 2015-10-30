@@ -228,7 +228,7 @@ class Dialogue(object):
     def display(self):
         """Updates the display for a page of dialogue."""
         self.window.clear()
-        self.window.addstr(1,1, self.title)
+        self.window.addstr(1,1, objects.smartcaps(self.title))
         for c in range(len(self.content)):
             self.window.addstr(3+c,1, self.content[c])
 
@@ -609,7 +609,7 @@ def runit(stdscr):
                 else:
                     mode = 'inventory'
                     menu_flag = leave_map
-            elif leave_map in 'v':
+            elif leave_map in 'Vv':
                 mode = 'view'
             elif 'q' == leave_map:
                 sys.exit()
@@ -621,15 +621,23 @@ def runit(stdscr):
         if 'view' == mode:
             alerts.push("Use movement keys to select a cell on the map. (Shift-move to go 5 squares.)")
             alerts.shift()
+            if leave_map == 'V':
+                view_closely = True
+            else:
+                view_closely = False
             # move cursor to its current position
             leave_map = view_loop(thisgame, map_display)
             if None == leave_map:
                 pass
-            else:
+            elif not view_closely:
+                look_at = thisgame.PC.floor.probe(leave_map)
                 alerts.push("You see %s%s at position %s." % \
-                  (thisgame.PC.floor.probe(leave_map).indef_article,
-                   thisgame.PC.floor.probe(leave_map).name,
-                   str(leave_map)))
+                  (look_at.indef_article, look_at.name, str(leave_map)))
+            else:
+                look_at = thisgame.PC.floor.probe(leave_map)
+                cutscene(Dialogue(title=look_at.name,
+                                  content=look_at.longdesc,
+                                  options=None))
             mode = 'mapnav'
 
         elif 'inventory' == mode:

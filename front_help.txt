@@ -1,4 +1,4 @@
-This is a roguelike where you can navigate a dungeon.
+This is a roguelike where you can explore a dungeon.
 
                                         yku
 Use these keys to move in 8 directions: h l

@@ -23,28 +23,6 @@ def smartcaps(sentence):
     start = sentence[0]
     remainder = sentence[1:]
     return start.capitalize() + remainder
-    
-
-#def strike_notifs(sub, obj):
-#    """Takes the subject and object of a sentence in which the subject hits
-#    the object. Returns an appropriate sentence."""
-#
-#    if isinstance(sub, Player):
-#        sub_name = "you"
-#    else:
-#        sub_name = sub.name
-#
-#    if isinstance(obj, Player):
-#        obj_name = "you"
-#    else:
-#        obj_name = obj.name
-#
-#    reply = random.choice(("{Adef}{Aname} scores a hit against {Bdef}{Bname}.",
-#                          "{Adef}{Aname} strikes {Bdef}{Bname}.")).format(
-#                          Adef=sub.def_article, Aname=sub_name,
-#                          Bdef=obj.def_article, Bname=obj_name)
-#
-#    return smartcaps(reply)
 
 def report(sentence):
     """Add an object-generated message to the message queue."""
@@ -66,7 +44,7 @@ class Entity(object):
 
     def __init__(self, name="Unknown entity", symbol=None, color=7,
                  description="You don't know about this yet",
-                 longdesc="You don't know about this yet, longer",
+                 longdesc="This doesn't seem worth the bother of describing.",
                  def_article="the ", indef_article="a ",
                  xp=0, level=1, alignment=None, opaque=False,
                  traversable=True, can_be_taken=False,
@@ -1035,7 +1013,7 @@ def make_wall(side="-"):
 
 def make_void():
     """Generate one void tile."""
-    return Entity(symbol=" ", description="There's nothing there.",
+    return Entity(name="void", symbol=" ", description="There's nothing there.",
                   traversable=False)
 
 shouts = []

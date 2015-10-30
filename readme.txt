@@ -6,8 +6,10 @@ at a time, but you can walk around and interact with what's there. If you go
 up or down the stairs, you can admire the work of my level generator and the
 scrolling display.
 
-Other things to note are the relative movement speeds of the zombie and your
-character, and the snake's behavior at low health.
+The load_and_run.sh script will reload the definitions of items and monsters
+before starting the game. If you change the XML files, then you'll need to
+start the game with this script once (or duplicate its effects by running the
+commands listed therein by hand).
 
 Make sure your command line window is at least 80 x 24.
 
@@ -30,6 +32,7 @@ e - [examine] an item from your inventory.
 E - [Examine closely] to see a longer description of inventory items.
     (Not all items have a longer description yet.)
 v - [view] an object visible on the map.
+V - [View closely] to see a longer description of things on the map.
 w - [wield or wear] an item in your inventory.
 r - [remove] an item that you are wearing.
 Space - Scroll through messages when prompted with "[MORE]"; Exit menus.
